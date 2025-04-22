@@ -99,7 +99,9 @@ class Command(BaseCommand):
 
         # Get all page models
         page_models = get_page_models()
-        self.stdout.write(f"Found {len(page_models)} page models")
+        self.stdout.write(f"Found {len(page_models)} page models:")
+        for model in page_models:
+            self.stdout.write(f"  - {model.__name__}")
 
         # Get URLs for page models
         page_urls = get_page_urls(self.stdout, page_models, base_url, max_instances)
@@ -107,7 +109,9 @@ class Command(BaseCommand):
 
         # Get all snippet models
         snippet_models = get_snippet_models()
-        self.stdout.write(f"Found {len(snippet_models)} snippet models")
+        self.stdout.write(f"Found {len(snippet_models)} snippet models:")
+        for model in snippet_models:
+            self.stdout.write(f"  - {model.__name__}")
 
         # Get URLs for snippet models
         snippet_urls = get_snippet_urls(
@@ -117,7 +121,9 @@ class Command(BaseCommand):
 
         # Get generic Django models with ModelAdmin
         modeladmin_models, modeladmin_url_paths = get_modeladmin_models()
-        self.stdout.write(f"Found {len(modeladmin_models)} modeladmin models")
+        self.stdout.write(f"Found {len(modeladmin_models)} modeladmin models:")
+        for model, _ in modeladmin_models:
+            self.stdout.write(f"  - {model.__name__}")
 
         # Get URLs for modeladmin models
         modeladmin_urls = get_modeladmin_urls(
@@ -131,7 +137,9 @@ class Command(BaseCommand):
 
         # Get models registered with ModelViewSet
         modelviewset_models, modelviewset_url_paths = get_modelviewset_models()
-        self.stdout.write(f"Found {len(modelviewset_models)} modelviewset models")
+        self.stdout.write(f"Found {len(modelviewset_models)} modelviewset models:")
+        for model in modelviewset_models:
+            self.stdout.write(f"  - {model.__name__}")
 
         # Get URLs for modelviewset models
         modelviewset_urls = get_modelviewset_urls(
