@@ -61,3 +61,6 @@ MANIFEST
 # Documentation
 docs/_build/
 site/
+
+# Generated files
+admin_urls.txt
