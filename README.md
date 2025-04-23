@@ -66,10 +66,12 @@ uv sync
 pre-commit install
 ```
 
+Further developer setup instructions can be found in the `docs/developer-setup.md` file.
+
 ### Run Tests
 
 ```bash
-python -m pytest # TODO: add test command
+# TODO: add test command
 ```
 
 ## Contributing
