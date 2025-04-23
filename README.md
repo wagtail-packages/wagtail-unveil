@@ -1,20 +1,22 @@
 # Wagtail Unveil
 
-A Wagtail package that helps map and expose admin and frontend URLs in your Wagtail project, useful for testing, documentation, and development.
+A Wagtail package that helps map and expose admin and frontend URLs in your Wagtail project.
 
 ## Overview
 
-Wagtail Unveil provides tools to discover and list all available admin and frontend URLs in your Wagtail project. This is particularly useful for:
+Wagtail Unveil provides a single command to discover and output all available admin and frontend URLs in your Wagtail project.
 
-- Discovering all admin URLs for model administration
+## Install the package into your Wagtail project
 
-## Installation
+Suggested install method is via pip but you should use the method that best fits your project setup:
 
 ```bash
 pip install wagtail-unveil
 ```
 
-Add to your installed apps:
+**Note**: The package is not yet available on PyPI, so you may need to install it directly from this GitHub repository.
+
+Update your wagtail settings to include `wagtail_unveil`:
 
 ```python
 INSTALLED_APPS = [
@@ -34,45 +36,21 @@ Wagtail Unveil provides a management command to list all admin URLs:
 python manage.py list_admin_urls
 ```
 
-You can specify options like:
+The command has a few flags that can be used to adjust the output. The flags are all optional:
 
-```bash
-python manage.py list_admin_urls --base-url=https://example.com --max-instances=5
-```
-
-## Helper Modules
-
-The package includes several helper modules:
-
-- `page_helpers.py`: Functions to discover and format page URLs
-- `snippet_helpers.py`: Functions to discover and format snippet URLs
-- `modeladmin_helpers.py`: Functions to discover and format ModelAdmin URLs
-- `media_helpers.py`: Helpers for media-related URLs
-- `settings_helpers.py`: Helpers for settings-related URLs
+- `--base_url`: The base URL to use for the output. Auto generated from the Wagtail site settings.
+- `--output`: Output the urls to the console or to a file. Default is console.
+- `--file`: The file name to output the urls to. This is only used if the output option is set to file the file type is a simple text file.
+- `--max-instances`: The maximum number of instances to show for each URL. This is used to adjust the number of instances shown in the output. The default is 1 a value of 0 will show all instances.
 
 ## Development
 
-### Setup Development Environment
+Developer setup instructions can be found in the `docs/developer-setup.md` file.
 
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/wagtail-unveil.git
-cd wagtail-unveil
+## Upcoming Features
 
-# Install dev dependencies
-uv sync
-
-# Install pre-commit hooks
-pre-commit install
-```
-
-Further developer setup instructions can be found in the `docs/developer-setup.md` file.
-
-### Run Tests
-
-```bash
-# TODO: add test command
-```
+- Provide the output via a json API endpoint (the output can then be used by other external tools and apps).
+- Additonal wagtail admin pages (maybe reports) to show the urls in a more user friendly way.
 
 ## Contributing
 
