@@ -80,3 +80,12 @@ The command has a few flags that can be used to adjust the output. The flags are
 - `--output`: Output the urls to the console or to a file. Default is console.
 - `--file`: The file name to output the urls to. This is only used if the output option is set to file the file type is a simple text file.
 - `--max-instances`: The maximum number of instances to show for each URL. This is used to adjust the number of instances shown in the output. The default is 1 a value of 0 will show all instances.
+
+
+## Running the tests
+
+To run the tests, you need to have the package installed and the virtual environment activated. Then run the following command:
+
+```bash
+uv run manage.py test wagtail_unveil
+```
