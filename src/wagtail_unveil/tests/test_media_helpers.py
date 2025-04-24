@@ -66,59 +66,6 @@ class GetImageModelTests(TestCase):
         self.assertEqual(result, Image)
 
 
-class GetDocumentModelTests(TestCase):
-    """Tests for the get_document_model function."""
-
-    def test_default_document_model(self):
-        """Test get_document_model returns the default Document model when no custom model is configured."""
-        with patch('wagtail_unveil.helpers.media_helpers.settings', Mock(spec=[])):
-            self.assertEqual(get_document_model(), Document)
-
-    @patch('wagtail_unveil.helpers.media_helpers.settings')
-    @patch('wagtail_unveil.helpers.media_helpers.apps.get_model')
-    def test_custom_document_model(self, mock_get_model, mock_settings):
-        """Test get_document_model returns the custom document model when one is configured."""
-        # Set up the mock settings
-        mock_settings.WAGTAILDOCS_DOCUMENT_MODEL = 'tests.CustomDocument'
-        mock_custom_model = Mock()
-        mock_get_model.return_value = mock_custom_model
-        
-        # Call the function
-        result = get_document_model()
-        
-        # Check the result
-        mock_get_model.assert_called_once_with('tests.CustomDocument')
-        self.assertEqual(result, mock_custom_model)
-
-    @patch('wagtail_unveil.helpers.media_helpers.settings')
-    @patch('wagtail_unveil.helpers.media_helpers.apps.get_model')
-    def test_invalid_document_model_lookup_error(self, mock_get_model, mock_settings):
-        """Test get_document_model returns the default model when an invalid model is configured (LookupError)."""
-        # Set up the mock settings
-        mock_settings.WAGTAILDOCS_DOCUMENT_MODEL = 'invalid.Model'
-        mock_get_model.side_effect = LookupError("Model not found")
-        
-        # Call the function
-        result = get_document_model()
-        
-        # Check the result
-        self.assertEqual(result, Document)
-
-    @patch('wagtail_unveil.helpers.media_helpers.settings')
-    @patch('wagtail_unveil.helpers.media_helpers.apps.get_model')
-    def test_invalid_document_model_value_error(self, mock_get_model, mock_settings):
-        """Test get_document_model returns the default model when an invalid model is configured (ValueError)."""
-        # Set up the mock settings
-        mock_settings.WAGTAILDOCS_DOCUMENT_MODEL = 'invalid'
-        mock_get_model.side_effect = ValueError("Invalid model string")
-        
-        # Call the function
-        result = get_document_model()
-        
-        # Check the result
-        self.assertEqual(result, Document)
-
-
 class GetImageAdminUrlsTests(TestCase):
     """Tests for the get_image_admin_urls function."""
 
@@ -215,6 +162,59 @@ class GetImageAdminUrlsTests(TestCase):
         
         # Check that style.INFO was called correctly
         mock_output.write.assert_called_once_with(mock_output.style.INFO("Note: wagtailimages.image has no instances"))
+
+
+class GetDocumentModelTests(TestCase):
+    """Tests for the get_document_model function."""
+
+    def test_default_document_model(self):
+        """Test get_document_model returns the default Document model when no custom model is configured."""
+        with patch('wagtail_unveil.helpers.media_helpers.settings', Mock(spec=[])):
+            self.assertEqual(get_document_model(), Document)
+
+    @patch('wagtail_unveil.helpers.media_helpers.settings')
+    @patch('wagtail_unveil.helpers.media_helpers.apps.get_model')
+    def test_custom_document_model(self, mock_get_model, mock_settings):
+        """Test get_document_model returns the custom document model when one is configured."""
+        # Set up the mock settings
+        mock_settings.WAGTAILDOCS_DOCUMENT_MODEL = 'tests.CustomDocument'
+        mock_custom_model = Mock()
+        mock_get_model.return_value = mock_custom_model
+        
+        # Call the function
+        result = get_document_model()
+        
+        # Check the result
+        mock_get_model.assert_called_once_with('tests.CustomDocument')
+        self.assertEqual(result, mock_custom_model)
+
+    @patch('wagtail_unveil.helpers.media_helpers.settings')
+    @patch('wagtail_unveil.helpers.media_helpers.apps.get_model')
+    def test_invalid_document_model_lookup_error(self, mock_get_model, mock_settings):
+        """Test get_document_model returns the default model when an invalid model is configured (LookupError)."""
+        # Set up the mock settings
+        mock_settings.WAGTAILDOCS_DOCUMENT_MODEL = 'invalid.Model'
+        mock_get_model.side_effect = LookupError("Model not found")
+        
+        # Call the function
+        result = get_document_model()
+        
+        # Check the result
+        self.assertEqual(result, Document)
+
+    @patch('wagtail_unveil.helpers.media_helpers.settings')
+    @patch('wagtail_unveil.helpers.media_helpers.apps.get_model')
+    def test_invalid_document_model_value_error(self, mock_get_model, mock_settings):
+        """Test get_document_model returns the default model when an invalid model is configured (ValueError)."""
+        # Set up the mock settings
+        mock_settings.WAGTAILDOCS_DOCUMENT_MODEL = 'invalid'
+        mock_get_model.side_effect = ValueError("Invalid model string")
+        
+        # Call the function
+        result = get_document_model()
+        
+        # Check the result
+        self.assertEqual(result, Document)
 
 
 class GetDocumentAdminUrlsTests(TestCase):
