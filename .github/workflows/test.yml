@@ -31,6 +31,10 @@ jobs:
     - name: Run tests
       run: |
         uv run manage.py test wagtail_unveil
+
+    - name: Run migrations
+      run: |
+        uv run manage.py migrate
         
     - name: Run list_admin_urls (default)
       run: |
