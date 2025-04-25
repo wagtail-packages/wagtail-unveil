@@ -11,40 +11,47 @@ from .base import format_url_tuple, get_instance_sample, safe_import
 # Users management function
 def get_admin_user():
     User = get_user_model()
-    return User.objects.filter(is_superuser=True)[:1]
+    admins = User.objects.filter(is_superuser=True)[:1]
+    return admins if admins.exists() else []
 
 
 # Groups management function
 def get_group():
-    return Group.objects.all()[:1]
+    groups = Group.objects.all()[:1]
+    return groups if groups.exists() else []
 
 
 # Collections management function
 def get_collections():
-    return Collection.objects.all().exclude(id=Collection.get_first_root_node().id)[:1]
+    collections = Collection.objects.all().exclude(id=Collection.get_first_root_node().id)[:1]
+    return collections if collections.exists() else []
 
 
 # Redirects management function
 def get_redirects():
-    return Redirect.objects.all()[:1]
+    redirects = Redirect.objects.all()[:1]
+    return redirects if redirects.exists() else []
 
 
 # Workflows management function
 def get_workflows():
     from wagtail.models import Workflow
-    return Workflow.objects.all()[:1]
+    workflows = Workflow.objects.all()[:1]
+    return workflows if workflows.exists() else []
 
 
 # Workflow tasks management function
 def get_tasks():
     from wagtail.models import Task
-    return Task.objects.all()[:1]
+    tasks = Task.objects.all()[:1]
+    return tasks if tasks.exists() else []
 
 
 # Search promotions management function
 def get_search_promotions():
     from wagtail.contrib.search_promotions.models import SearchPromotion
-    return SearchPromotion.objects.all()[:1]
+    promotions = SearchPromotion.objects.all()[:1]
+    return promotions if promotions.exists() else []
 
 
 # Form pages management function
@@ -56,7 +63,7 @@ def get_form_pages():
     for page in Page.objects.specific():
         if isinstance(page, AbstractEmailForm):
             form_pages.append(page)
-    return form_pages[:5]  # Limit to 5 to avoid too many URLs
+    return form_pages[:5] if form_pages else []  # Limit to 5 to avoid too many URLs
 
 
 def get_settings_admin_urls(output, base_url):
