@@ -6,7 +6,7 @@ readme = "README.md"
 authors = [
     { name = "Nick Moreton", email = "nickmoreton@me.com" }
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.9"
 dependencies = [
     "wagtail>=6.3",
 ]
@@ -19,4 +19,6 @@ build-backend = "hatchling.build"
 dev = [
     "pre-commit>=4.2.0",
     "ruff>=0.11.6",
+    "wagtail-modeladmin>=2.1.0",
+    "tox>=4.11.3",
 ]

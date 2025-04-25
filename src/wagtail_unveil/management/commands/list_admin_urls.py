@@ -122,7 +122,7 @@ class Command(BaseCommand):
         # Get generic Django models with ModelAdmin
         modeladmin_models, modeladmin_url_paths = get_modeladmin_models()
         self.stdout.write(f"Found {len(modeladmin_models)} modeladmin models:")
-        for model, _ in modeladmin_models:
+        for model in modeladmin_models:
             self.stdout.write(f"  - {model.__name__}")
 
         # Get URLs for modeladmin models

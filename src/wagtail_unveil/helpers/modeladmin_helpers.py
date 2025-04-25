@@ -26,19 +26,17 @@ def get_modeladmin_models():
             hooks_module = import_module(f"{app_config.name}.wagtail_hooks")
             # Look for ModelAdmin classes
             for name, obj in inspect.getmembers(hooks_module):
-                if inspect.isclass(obj) and hasattr(obj, "model"):
+                # Check if this object has a model attribute (which is a key indicator of ModelAdmin)
+                if hasattr(obj, "model") and obj.model is not None:
                     # Check if this looks like a ModelAdmin - old or new style
                     # For classic wagtail.contrib.modeladmin.options.ModelAdmin
-                    if (
-                        hasattr(obj, "get_admin_urls_for_registration")
-                        and obj.model is not None
-                    ):
+                    if hasattr(obj, "get_admin_urls_for_registration"):
                         modeladmin_models.append(obj.model)
                         # Store custom base_url_path if it exists
                         if hasattr(obj, "base_url_path") and obj.base_url_path:
                             modeladmin_url_paths[obj.model] = obj.base_url_path
                     # For the newer wagtail_modeladmin.options.ModelAdmin
-                    elif hasattr(obj, "get_admin_urls") and obj.model is not None:
+                    elif hasattr(obj, "get_admin_urls"):
                         modeladmin_models.append(obj.model)
                         # Store custom base_url_path if it exists
                         if hasattr(obj, "base_url_path") and obj.base_url_path:
@@ -46,37 +44,6 @@ def get_modeladmin_models():
         except (ImportError, ModuleNotFoundError):
             # App doesn't have wagtail_hooks module
             pass
-
-    # Check if any objects have been registered directly via modeladmin_register
-    try:
-        # For the new wagtail_modeladmin package
-        from wagtail_modeladmin.options import ModelAdminRegistry
-
-        registry = ModelAdminRegistry()
-        for modeladmin in registry._registry:
-            if hasattr(modeladmin, "model") and modeladmin.model is not None:
-                modeladmin_models.append(modeladmin.model)
-                # Store custom base_url_path if it exists
-                if hasattr(modeladmin, "base_url_path") and modeladmin.base_url_path:
-                    modeladmin_url_paths[modeladmin.model] = modeladmin.base_url_path
-    except (ImportError, ModuleNotFoundError):
-        # The new wagtail_modeladmin package might not be installed
-        pass
-
-    try:
-        # For classic wagtail.contrib.modeladmin
-        from wagtail.contrib.modeladmin.options import ModelAdminRegistry
-
-        registry = ModelAdminRegistry()
-        for modeladmin in registry._registry:
-            if hasattr(modeladmin, "model") and modeladmin.model is not None:
-                modeladmin_models.append(modeladmin.model)
-                # Store custom base_url_path if it exists
-                if hasattr(modeladmin, "base_url_path") and modeladmin.base_url_path:
-                    modeladmin_url_paths[modeladmin.model] = modeladmin.base_url_path
-    except (ImportError, ModuleNotFoundError):
-        # The classic wagtail.contrib.modeladmin package might not be installed
-        pass
 
     return modeladmin_models, modeladmin_url_paths
 
