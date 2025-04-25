@@ -1,7 +1,7 @@
 [project]
 name = "wagtail-unveil"
 version = "0.1.0"
-description = "Add your description here"
+description = "A Wagtail package that helps map and expose admin and frontend URLs in your Wagtail project."
 readme = "README.md"
 authors = [
     { name = "Nick Moreton", email = "nickmoreton@me.com" }
@@ -35,10 +35,6 @@ dependencies = [
     "wagtail>=5.2",
 ]
 
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
 [dependency-groups]
 dev = [
     "pre-commit>=4.2.0",
@@ -46,3 +42,7 @@ dev = [
     "wagtail-modeladmin>=2.1.0",
     "tox>=4.11.3",
 ]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
