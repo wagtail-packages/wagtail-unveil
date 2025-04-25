@@ -36,25 +36,22 @@ class UnveilReportView(ReportView):
         max_instances = 1
         base_url = "http://localhost:8000"  # Default base URL
         
-        # Get page models first
-        page_models = get_page_models()
-        
         # Collect page URLs
-        page_urls = get_page_urls(output, page_models, base_url, max_instances)
+        page_urls = get_page_urls(output, base_url, max_instances)
         for model_name, url_type, url in page_urls:
             all_urls.append(UrlEntry(counter, model_name, url_type, url))
             counter += 1
         
         # Get snippet models and collect snippet URLs
-        from wagtail.snippets.models import get_snippet_models
-        snippet_models = get_snippet_models()
-        snippet_urls = get_snippet_urls(output, snippet_models, base_url, max_instances)
+        snippet_urls = get_snippet_urls(output, base_url, max_instances)
         for model_name, url_type, url in snippet_urls:
             all_urls.append(UrlEntry(counter, model_name, url_type, url))
             counter += 1
         
         # Get modelviewset models and collect modelviewset URLs
-        modelviewset_models, modelviewset_url_paths = get_modelviewset_models()
+        modelviewset_models = get_modelviewset_models()
+        # Create an empty dictionary for URL paths since we no longer get it from get_modelviewset_models()
+        modelviewset_url_paths = {}
         modelviewset_urls = get_modelviewset_urls(output, modelviewset_models, modelviewset_url_paths, base_url, max_instances)
         for model_name, url_type, url in modelviewset_urls:
             all_urls.append(UrlEntry(counter, model_name, url_type, url))
@@ -126,7 +123,9 @@ class UnveilApiView(View):
             })
         
         # Get modelviewset models and collect modelviewset URLs
-        modelviewset_models, modelviewset_url_paths = get_modelviewset_models()
+        modelviewset_models = get_modelviewset_models()
+        # Create an empty dictionary for URL paths since we no longer get it from get_modelviewset_models()
+        modelviewset_url_paths = {}
         modelviewset_urls = get_modelviewset_urls(output, modelviewset_models, modelviewset_url_paths, base_url, max_instances)
         for model_name, url_type, url in modelviewset_urls:
             urls_data.append({

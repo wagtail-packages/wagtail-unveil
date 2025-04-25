@@ -136,12 +136,14 @@ class Command(BaseCommand):
         urls.extend(modeladmin_urls)
 
         # Get models registered with ModelViewSet
-        modelviewset_models, modelviewset_url_paths = get_modelviewset_models()
+        modelviewset_models = get_modelviewset_models()
         self.stdout.write(f"Found {len(modelviewset_models)} modelviewset models:")
         for model in modelviewset_models:
             self.stdout.write(f"  - {model.__name__}")
 
         # Get URLs for modelviewset models
+        # Create an empty dictionary for URL paths since we no longer get it from get_modelviewset_models()
+        modelviewset_url_paths = {}
         modelviewset_urls = get_modelviewset_urls(
             self.stdout,
             modelviewset_models,

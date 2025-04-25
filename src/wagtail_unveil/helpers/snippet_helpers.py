@@ -58,8 +58,6 @@ def get_modelviewset_models():
     This is a bit more complex since we need to inspect the wagtail_hooks modules
     """
     modelviewset_models = []
-    # Dictionary to store custom base URL paths for models
-    modelviewset_url_paths = {}
 
     # Look for apps with wagtail_hooks module
     for app_config in apps.get_app_configs():
@@ -73,14 +71,11 @@ def get_modelviewset_models():
                         # Only add the model if it's not None
                         if obj.model is not None:
                             modelviewset_models.append(obj.model)
-                            # Store custom base_url_path if it exists
-                            if hasattr(obj, "base_url_path") and obj.base_url_path:
-                                modelviewset_url_paths[obj.model] = obj.base_url_path
         except (ImportError, ModuleNotFoundError):
             # App doesn't have wagtail_hooks module
             pass
 
-    return modelviewset_models, modelviewset_url_paths
+    return modelviewset_models
 
 
 def get_modelviewset_urls(

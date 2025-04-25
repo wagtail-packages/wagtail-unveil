@@ -170,7 +170,6 @@ class GetModelViewsetModelsTests(TestCase):
         mock_modelviewset1 = Mock()
         mock_modelviewset1.__bases__ = ('ModelViewSet',)
         mock_modelviewset1.model = mock_model1
-        mock_modelviewset1.base_url_path = "custom/path1"
         
         # Add a class that's not a ModelViewSet
         mock_other_class = Mock()
@@ -193,7 +192,6 @@ class GetModelViewsetModelsTests(TestCase):
         mock_modelviewset2 = Mock()
         mock_modelviewset2.__bases__ = ('ModelViewSet',)
         mock_modelviewset2.model = mock_model2
-        # This one doesn't have a custom base_url_path
         
         mock_hooks_module2.__dict__ = {
             'ModelViewSet2': mock_modelviewset2,
@@ -226,17 +224,12 @@ class GetModelViewsetModelsTests(TestCase):
                 mock_isclass.side_effect = lambda obj: obj in [mock_modelviewset1, mock_other_class, mock_modelviewset_no_model, mock_modelviewset2]
                 
                 # Call the function
-                models, url_paths = get_modelviewset_models()
+                models = get_modelviewset_models()
                 
                 # Check we get the expected models
                 self.assertEqual(len(models), 2)
                 self.assertIn(mock_model1, models)
                 self.assertIn(mock_model2, models)
-                
-                # Check that our mock_model1 has a custom URL path entry
-                self.assertIn(mock_model1, url_paths)
-                self.assertEqual(url_paths[mock_model1], "custom/path1")
-                # We don't assert the actual size of url_paths as it may vary based on implementation
 
     @patch('wagtail_unveil.helpers.snippet_helpers.import_module')
     @patch('wagtail_unveil.helpers.snippet_helpers.apps')
@@ -251,11 +244,10 @@ class GetModelViewsetModelsTests(TestCase):
         mock_import_module.side_effect = ImportError("No module named 'app1.wagtail_hooks'")
         
         # Call the function
-        models, url_paths = get_modelviewset_models()
+        models = get_modelviewset_models()
         
         # Check we get empty results
         self.assertEqual(models, [])
-        self.assertEqual(url_paths, {})
 
 
 class GetModelViewsetUrlsTests(TestCase):
