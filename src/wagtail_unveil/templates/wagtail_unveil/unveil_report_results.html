@@ -1,0 +1,33 @@
+{% extends 'wagtailadmin/reports/base_report_results.html' %}
+{% load wagtailadmin_tags %}
+
+{% block results %}
+    <table class="listing">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Model Name</th>
+                <th>URL Type</th>
+                <th>URL</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for entry in object_list %}
+                <tr>
+                    <td>{{ entry.id }}</td>
+                    <td>{{ entry.model_name }}</td>
+                    <td>{{ entry.url_type }}</td>
+                    <td>{{ entry.url }}</td>
+                    <td>
+                        <a href="{{ entry.url }}" target="_blank" class="button button-small">View</a>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}
+
+{% block no_results_message %}
+    <p>No URLs found. This could be because there are no pages in the system or the helper functions did not return any results.</p>
+{% endblock %}
