@@ -17,8 +17,6 @@ def get_modeladmin_models():
     This is a bit more complex since we need to inspect the wagtail_hooks modules
     """
     modeladmin_models = []
-    # Dictionary to store custom base URL paths for models
-    modeladmin_url_paths = {}
 
     # Look for apps with wagtail_hooks module
     for app_config in apps.get_app_configs():
@@ -32,20 +30,14 @@ def get_modeladmin_models():
                     # For classic wagtail.contrib.modeladmin.options.ModelAdmin
                     if hasattr(obj, "get_admin_urls_for_registration"):
                         modeladmin_models.append(obj.model)
-                        # Store custom base_url_path if it exists
-                        if hasattr(obj, "base_url_path") and obj.base_url_path:
-                            modeladmin_url_paths[obj.model] = obj.base_url_path
                     # For the newer wagtail_modeladmin.options.ModelAdmin
                     elif hasattr(obj, "get_admin_urls"):
                         modeladmin_models.append(obj.model)
-                        # Store custom base_url_path if it exists
-                        if hasattr(obj, "base_url_path") and obj.base_url_path:
-                            modeladmin_url_paths[obj.model] = obj.base_url_path
         except (ImportError, ModuleNotFoundError):
             # App doesn't have wagtail_hooks module
             pass
 
-    return modeladmin_models, modeladmin_url_paths
+    return modeladmin_models
 
 
 def get_modeladmin_urls(
@@ -56,8 +48,22 @@ def get_modeladmin_urls(
     # Strip trailing slash from base_url to avoid double slashes
     base = base_url.rstrip("/")
 
-    # Get modeladmin models and URL paths directly
-    modeladmin_models, modeladmin_url_paths = get_modeladmin_models()
+    # Get modeladmin models
+    modeladmin_models = get_modeladmin_models()
+    
+    # Dictionary to store custom base URL paths for models
+    modeladmin_url_paths = {}
+    
+    # Find custom URL paths for models by re-inspecting wagtail_hooks
+    for app_config in apps.get_app_configs():
+        try:
+            hooks_module = import_module(f"{app_config.name}.wagtail_hooks")
+            for name, obj in inspect.getmembers(hooks_module):
+                if hasattr(obj, "model") and obj.model is not None:
+                    if hasattr(obj, "base_url_path") and obj.base_url_path:
+                        modeladmin_url_paths[obj.model] = obj.base_url_path
+        except (ImportError, ModuleNotFoundError):
+            pass
 
     for model in modeladmin_models:
         model_name = f"{model._meta.app_label}.{model._meta.model_name}"
