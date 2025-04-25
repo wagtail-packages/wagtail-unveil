@@ -6,9 +6,39 @@ readme = "README.md"
 authors = [
     { name = "Nick Moreton", email = "nickmoreton@me.com" }
 ]
+license = {text = "MIT"}
+
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Web Environment",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Topic :: Internet :: WWW/HTTP",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Framework :: Django",
+    "Framework :: Django :: 4.2",
+    "Framework :: Django :: 5.1",
+    "Framework :: Django :: 5.2",
+    "Framework :: Wagtail",
+    "Framework :: Wagtail :: 5",
+    "Framework :: Wagtail :: 6",
+]
+
+[project.urls]
+Homepage = "https://github.com/wagtail-packages/wagtail-unveil"
+Documentation = "https://github.com/wagtail-packages/wagtail-unveil#readme"
+Issues = "https://github.com/wagtail-packages/wagtail-unveil/issues"
+Changelog = "https://github.com/wagtail-packages/wagtail-unveil/blob/main/CHANGELOG.md"
+
 requires-python = ">=3.9"
 dependencies = [
-    "wagtail>=6.3",
+    "wagtail>=5.2",
 ]
 
 [build-system]
