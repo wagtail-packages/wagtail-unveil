@@ -1,19 +1,20 @@
-from django.apps import apps
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import DatabaseError, OperationalError
 from wagtail.models import Page, Site
+from wagtail.models import get_page_models as get_page_models_wagtail
 
 from .base import format_url_tuple, get_instance_sample, model_has_instances
 
 
 def get_page_models():
-    """Get all models that inherit from Page"""
-    page_models = []
-    for app_config in apps.get_app_configs():
-        for model in app_config.get_models():
-            if issubclass(model, Page) and model != Page:
-                page_models.append(model)
-    return page_models
+    """
+    Get all models that inherit from Page
+    
+    Returns:
+        list: A list of page models currently uses the Wagtail
+        get_page_models function. It should be good enough...
+    """
+    return get_page_models_wagtail()
 
 
 def get_page_urls(output, page_models, base_url, max_instances):

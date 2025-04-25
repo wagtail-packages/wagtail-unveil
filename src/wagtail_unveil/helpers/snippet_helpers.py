@@ -3,6 +3,7 @@ from importlib import import_module
 
 from django.apps import apps
 from django.contrib.contenttypes.models import ContentType
+from wagtail.snippets.models import get_snippet_models
 
 from .base import (
     format_url_tuple,
@@ -12,10 +13,10 @@ from .base import (
 )
 
 
-def get_snippet_urls(output, snippet_models, base_url, max_instances):
+def get_snippet_urls(output, base_url, max_instances):
     """Get admin URLs for snippet models, including both list and edit URLs"""
     urls = []
-    for model in snippet_models:
+    for model in get_snippet_models():
         model_name = f"{model._meta.app_label}.{model._meta.model_name}"
         content_type = ContentType.objects.get_for_model(model)
 

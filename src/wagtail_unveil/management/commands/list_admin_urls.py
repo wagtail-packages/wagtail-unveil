@@ -115,7 +115,7 @@ class Command(BaseCommand):
 
         # Get URLs for snippet models
         snippet_urls = get_snippet_urls(
-            self.stdout, snippet_models, base_url, max_instances
+            self.stdout, base_url, max_instances
         )
         urls.extend(snippet_urls)
 
