@@ -7,18 +7,26 @@ from wagtail.contrib.redirects.models import Redirect
 
 from .base import format_url_tuple, get_instance_sample, safe_import
 
+"""This file needs more work"""
+
+
+# Sites management function
+def get_default_site():
+    site = Site.objects.filter(is_default_site=True)
+    return site.first() if site.exists() else None
+
 
 # Users management function
 def get_admin_user():
     User = get_user_model()
-    admins = User.objects.filter(is_superuser=True)[:1]
-    return admins if admins.exists() else []
+    admins = User.objects.filter(is_superuser=True)
+    return admins.first() if admins.exists() else []
 
 
 # Groups management function
 def get_group():
-    groups = Group.objects.all()[:1]
-    return groups if groups.exists() else []
+    groups = Group.objects.all()
+    return groups.first() if groups.exists() else []
 
 
 # Collections management function
@@ -78,8 +86,8 @@ def get_settings_admin_urls(output, base_url):
     urls.append(format_url_tuple("Settings > Sites", None, "list", sites_url))
 
     # Try to get an existing site to create an edit URL
-    sites = get_instance_sample(output, Site, max_instances=1)
-    for site in sites:
+    site = get_default_site()
+    if site:
         site_edit_url = f"{base}/admin/sites/{site.id}/"
         urls.append(
             format_url_tuple(
@@ -93,16 +101,10 @@ def get_settings_admin_urls(output, base_url):
         ("Users", "users"),
         ("Groups", "groups"),
         ("Redirects", "redirects"),
-        ("Workflows", "workflows/list"),  # Corrected path for workflows list
-        (
-            "Workflow tasks",
-            "workflows/tasks/index",
-        ),  # Corrected path for workflow tasks
-        (
-            "Locales",
-            "locales",
-        ),  # Added Locales settings - IMPORTANT: plural form "locales" not "locale"
-        ("Search promotions", "searchpicks"),  # Added Search promotions
+        ("Workflows", "workflows/list"),
+        ("Workflow tasks","workflows/tasks/index"),
+        ("Locales","locales"),
+        ("Search promotions", "searchpicks"),
     ]
 
     for name, path in settings_sections:
@@ -112,32 +114,27 @@ def get_settings_admin_urls(output, base_url):
             output.write(f"Using correct PLURAL URL for locales: {section_url}")
         urls.append(format_url_tuple(f"Settings > {name}", None, "list", section_url))
 
-    # Users management - try to get an admin user for edit URL
-    admins = safe_import(
-        output,
-        get_admin_user,
-        fallback_value=[],
-        error_msg="Error getting user instances",
-    )
+    # # Users management - try to get an admin user for edit URL
+    # admins = safe_import(
+    #     output,
+    #     get_admin_user,
+    #     fallback_value=[],
+    #     error_msg="Error getting user instances",
+    # )
 
-    for admin in admins:
-        user_edit_url = f"{base}/admin/users/{admin.id}/"
+    admin_user = get_admin_user()
+    if admin_user:
+        user_edit_url = f"{base}/admin/users/{admin_user.id}/"
         urls.append(
             format_url_tuple(
-                f"Settings > Users > {admin.username}", None, "edit", user_edit_url
+                f"Settings > Users > {admin_user.username}", None, "edit", user_edit_url
             )
         )
 
     # Groups management - try to get a group for edit URL
     if apps.is_installed("django.contrib.auth"):
-        groups = safe_import(
-            output,
-            get_group,
-            fallback_value=[],
-            error_msg="Error getting group instances",
-        )
-
-        for group in groups:
+        group = get_group()
+        if group:
             group_edit_url = f"{base}/admin/groups/{group.id}/"
             urls.append(
                 format_url_tuple(
@@ -331,8 +328,8 @@ def get_settings_admin_urls(output, base_url):
         )
 
         # Add site settings URL - these are per-site
-        sites = get_instance_sample(output, Site, max_instances=1)
-        for site in sites:
+        site = get_default_site()
+        if site:
             site_settings_url = f"{base}/admin/settings/base/sitesettings/{site.id}/"
             urls.append(
                 format_url_tuple(
