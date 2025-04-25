@@ -30,9 +30,6 @@ classifiers = [
     "Framework :: Wagtail :: 6",
 ]
 
-[project.urls]
-homepage = "https://github.com/wagtail-packages/wagtail-unveil"
-
 requires-python = ">=3.9"
 dependencies = [
     "wagtail>=5.2",
