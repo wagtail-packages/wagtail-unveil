@@ -274,7 +274,6 @@ class GetModelViewsetUrlsTests(TestCase):
         self.mock_instance2.__str__ = Mock(return_value="Instance 2")
         
         self.modelviewset_models = [self.mock_model1, self.mock_model2]
-        self.modelviewset_url_paths = {}
         self.base_url = "http://testserver"
         self.max_instances = 5
 
@@ -295,7 +294,6 @@ class GetModelViewsetUrlsTests(TestCase):
         # Call the function
         result = get_modelviewset_urls(
             self.output, 
-            self.modelviewset_url_paths, 
             self.base_url, 
             self.max_instances
         )
@@ -327,7 +325,6 @@ class GetModelViewsetUrlsTests(TestCase):
         # Call the function
         result = get_modelviewset_urls(
             self.output, 
-            self.modelviewset_url_paths, 
             self.base_url, 
             self.max_instances
         )
@@ -352,9 +349,6 @@ class GetModelViewsetUrlsTests(TestCase):
         # Set up the get_modelviewset_models mock to return just model1
         mock_get_modelviewset_models.return_value = [self.mock_model1]
         
-        # Add a custom URL path for model1
-        modelviewset_url_paths = {self.mock_model1: "custom/path1"}
-        
         # Set up other mocks
         mock_model_has_instances.return_value = True
         mock_get_instance_sample.return_value = [self.mock_instance1]
@@ -362,7 +356,6 @@ class GetModelViewsetUrlsTests(TestCase):
         # Call the function
         result = get_modelviewset_urls(
             self.output, 
-            modelviewset_url_paths, 
             self.base_url, 
             self.max_instances
         )
@@ -370,7 +363,7 @@ class GetModelViewsetUrlsTests(TestCase):
         # Check that we get the expected URLs with the custom path
         self.assertEqual(len(result), 2)  # 1 list URL + 1 edit URL
         
-        # The actual implementation doesn't use custom paths from modelviewset_url_paths
+        # The actual implementation doesn't use custom paths
         # It always constructs URLs based on model name
         self.assertIn(("app1.model1", "list", "http://testserver/admin/model1/"), result)
         self.assertIn(("app1.model1 (Instance 1)", "edit", "http://testserver/admin/model1/1/"), result)
@@ -390,7 +383,6 @@ class GetModelViewsetUrlsTests(TestCase):
         # Call the function
         result = get_modelviewset_urls(
             self.output, 
-            self.modelviewset_url_paths, 
             self.base_url, 
             self.max_instances
         )

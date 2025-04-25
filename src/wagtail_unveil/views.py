@@ -49,8 +49,7 @@ class UnveilReportView(ReportView):
             counter += 1
         
         # Create an empty dictionary for URL paths since we no longer get it from get_modelviewset_models()
-        modelviewset_url_paths = {}
-        modelviewset_urls = get_modelviewset_urls(output, modelviewset_url_paths, base_url, max_instances)
+        modelviewset_urls = get_modelviewset_urls(output, base_url, max_instances)
         for model_name, url_type, url in modelviewset_urls:
             all_urls.append(UrlEntry(counter, model_name, url_type, url))
             counter += 1

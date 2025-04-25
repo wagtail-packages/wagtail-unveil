@@ -142,10 +142,8 @@ class Command(BaseCommand):
             self.stdout.write(f"  - {model.__name__}")
 
         # Get URLs for modelviewset models
-        modelviewset_url_paths = {}
         modelviewset_urls = get_modelviewset_urls(
             self.stdout,
-            modelviewset_url_paths,
             base_url,
             max_instances,
         )

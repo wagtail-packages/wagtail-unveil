@@ -79,7 +79,7 @@ def get_modelviewset_models():
 
 
 def get_modelviewset_urls(
-    output, modelviewset_url_paths, base_url, max_instances
+    output, base_url, max_instances
 ):
     """Get admin URLs for models registered with ModelViewSet"""
     urls = []
