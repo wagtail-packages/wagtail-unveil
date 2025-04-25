@@ -8,22 +8,19 @@ from .base import format_url_tuple, get_instance_sample, model_has_instances
 
 def get_page_models():
     """
-    Get all models that inherit from Page
-    
-    Returns:
-        list: A list of page models currently uses the Wagtail
-        get_page_models function. It should be good enough...
+    This currently returns the core get_page_models function from Wagtail.
+    Not sure yet if this need to be overridden in some way.
     """
     return get_page_models_wagtail()
 
 
-def get_page_urls(output, page_models, base_url, max_instances):
+def get_page_urls(output, base_url, max_instances):
     """Get admin URLs for page models"""
     urls = []
     # Strip trailing slash from base_url to avoid double slashes
     base = base_url.rstrip("/")
 
-    for model in page_models:
+    for model in get_page_models():
         model_name = f"{model._meta.app_label}.{model._meta.model_name}"
 
         # Check if model has any instances

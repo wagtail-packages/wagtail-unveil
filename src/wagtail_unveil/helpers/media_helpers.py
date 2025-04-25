@@ -10,12 +10,18 @@ from .base import (
 
 
 def get_image_model():
-    """Get the image model from settings if specified, otherwise use the default"""
+    """
+    This currently returns the core get_image_model function from Wagtail.
+    Not sure yet if this need to be overridden in some way.
+    """
     return get_image_model_wagtail()
 
 
 def get_document_model():
-    """Get the document model from settings if specified, otherwise use the default"""
+    """
+    This currently returns the core get_document_model function from Wagtail.
+    Not sure yet if this need to be overridden in some way.
+    """
     return get_document_model_wagtail()
 
 
