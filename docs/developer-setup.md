@@ -30,6 +30,27 @@ Run the command to see the output:
 python manage.py list_admin_urls
 ```
 
+## Running tox tests
+
+To run the full test suite across all supported Python and Wagtail/Django versions:
+
+```bash
+uv pip install tox tox-uv
+tox
+```
+
+To run tests for a specific environment:
+
+```bash
+tox -e py312-wagtail60-django50
+```
+
+Available environments can be listed with:
+
+```bash
+tox list
+```
+
 You should see the console output for the startexample app urls. The urls are grouped by frontend urls and backend urls. The backend urls are grouped by listing and edit urls. 
 
 You will see some urls that indicate (NO INSANCES) which means there are no records avaiable for that url. This is expected as the app is not fully populated with data.
