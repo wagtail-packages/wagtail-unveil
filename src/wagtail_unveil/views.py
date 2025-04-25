@@ -5,7 +5,7 @@ from django.http import JsonResponse
 from django.views import View
 
 from .helpers.page_helpers import get_page_urls, get_page_models
-from .helpers.snippet_helpers import get_snippet_urls, get_modelviewset_urls, get_modelviewset_models
+from .helpers.snippet_helpers import get_snippet_urls, get_modelviewset_urls
 from .helpers.modeladmin_helpers import get_modeladmin_urls, get_modeladmin_models
 from .helpers.settings_helpers import get_settings_admin_urls
 from .helpers.media_helpers import get_image_admin_urls, get_document_admin_urls
@@ -48,11 +48,9 @@ class UnveilReportView(ReportView):
             all_urls.append(UrlEntry(counter, model_name, url_type, url))
             counter += 1
         
-        # Get modelviewset models and collect modelviewset URLs
-        modelviewset_models = get_modelviewset_models()
         # Create an empty dictionary for URL paths since we no longer get it from get_modelviewset_models()
         modelviewset_url_paths = {}
-        modelviewset_urls = get_modelviewset_urls(output, modelviewset_models, modelviewset_url_paths, base_url, max_instances)
+        modelviewset_urls = get_modelviewset_urls(output, modelviewset_url_paths, base_url, max_instances)
         for model_name, url_type, url in modelviewset_urls:
             all_urls.append(UrlEntry(counter, model_name, url_type, url))
             counter += 1
@@ -122,11 +120,9 @@ class UnveilApiView(View):
                 'url': url
             })
         
-        # Get modelviewset models and collect modelviewset URLs
-        modelviewset_models = get_modelviewset_models()
         # Create an empty dictionary for URL paths since we no longer get it from get_modelviewset_models()
         modelviewset_url_paths = {}
-        modelviewset_urls = get_modelviewset_urls(output, modelviewset_models, modelviewset_url_paths, base_url, max_instances)
+        modelviewset_urls = get_modelviewset_urls(output, modelviewset_url_paths, base_url, max_instances)
         for model_name, url_type, url in modelviewset_urls:
             urls_data.append({
                 'model_name': model_name,

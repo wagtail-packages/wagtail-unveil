@@ -79,11 +79,14 @@ def get_modelviewset_models():
 
 
 def get_modelviewset_urls(
-    output, modelviewset_models, modelviewset_url_paths, base_url, max_instances
+    output, modelviewset_url_paths, base_url, max_instances
 ):
     """Get admin URLs for models registered with ModelViewSet"""
     urls = []
     base = base_url.rstrip("/")
+
+    # Get the models inside the function instead of receiving them as a parameter
+    modelviewset_models = get_modelviewset_models()
 
     # Models that should be skipped because they're already included in settings
     skip_models = ["wagtailcore.locale", "wagtailcore.site"]

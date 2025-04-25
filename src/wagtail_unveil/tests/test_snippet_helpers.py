@@ -278,10 +278,14 @@ class GetModelViewsetUrlsTests(TestCase):
         self.base_url = "http://testserver"
         self.max_instances = 5
 
+    @patch('wagtail_unveil.helpers.snippet_helpers.get_modelviewset_models')
     @patch('wagtail_unveil.helpers.snippet_helpers.model_has_instances')
     @patch('wagtail_unveil.helpers.snippet_helpers.get_instance_sample')
-    def test_get_modelviewset_urls_with_instances(self, mock_get_instance_sample, mock_model_has_instances):
+    def test_get_modelviewset_urls_with_instances(self, mock_get_instance_sample, mock_model_has_instances, mock_get_modelviewset_models):
         """Test get_modelviewset_urls with models that have instances."""
+        # Set up the get_modelviewset_models mock to return our test models
+        mock_get_modelviewset_models.return_value = self.modelviewset_models
+        
         # Set up the model_has_instances mock to return True for both models
         mock_model_has_instances.side_effect = [True, True]
         
@@ -291,7 +295,6 @@ class GetModelViewsetUrlsTests(TestCase):
         # Call the function
         result = get_modelviewset_urls(
             self.output, 
-            self.modelviewset_models, 
             self.modelviewset_url_paths, 
             self.base_url, 
             self.max_instances
@@ -311,16 +314,19 @@ class GetModelViewsetUrlsTests(TestCase):
         self.assertIn(("app1.model1 (Instance 1)", "edit", "http://testserver/admin/model1/1/"), result)
         self.assertIn(("app1.model1 (Instance 2)", "edit", "http://testserver/admin/model1/2/"), result)
 
+    @patch('wagtail_unveil.helpers.snippet_helpers.get_modelviewset_models')
     @patch('wagtail_unveil.helpers.snippet_helpers.model_has_instances')
-    def test_get_modelviewset_urls_without_instances(self, mock_model_has_instances):
+    def test_get_modelviewset_urls_without_instances(self, mock_model_has_instances, mock_get_modelviewset_models):
         """Test get_modelviewset_urls with models that have no instances."""
+        # Set up the get_modelviewset_models mock to return our test models
+        mock_get_modelviewset_models.return_value = self.modelviewset_models
+        
         # Set up the model_has_instances mock to return False for both models
         mock_model_has_instances.side_effect = [False, False]
         
         # Call the function
         result = get_modelviewset_urls(
             self.output, 
-            self.modelviewset_models, 
             self.modelviewset_url_paths, 
             self.base_url, 
             self.max_instances
@@ -338,10 +344,14 @@ class GetModelViewsetUrlsTests(TestCase):
         # Check the output message for models with no instances
         self.assertIn("Note: app1.model1 has no instances", self.output.getvalue())
 
+    @patch('wagtail_unveil.helpers.snippet_helpers.get_modelviewset_models')
     @patch('wagtail_unveil.helpers.snippet_helpers.model_has_instances')
     @patch('wagtail_unveil.helpers.snippet_helpers.get_instance_sample')
-    def test_get_modelviewset_urls_with_custom_url_paths(self, mock_get_instance_sample, mock_model_has_instances):
+    def test_get_modelviewset_urls_with_custom_url_paths(self, mock_get_instance_sample, mock_model_has_instances, mock_get_modelviewset_models):
         """Test get_modelviewset_urls with custom URL paths."""
+        # Set up the get_modelviewset_models mock to return just model1
+        mock_get_modelviewset_models.return_value = [self.mock_model1]
+        
         # Add a custom URL path for model1
         modelviewset_url_paths = {self.mock_model1: "custom/path1"}
         
@@ -349,10 +359,9 @@ class GetModelViewsetUrlsTests(TestCase):
         mock_model_has_instances.return_value = True
         mock_get_instance_sample.return_value = [self.mock_instance1]
         
-        # Call the function with only mock_model1 (not the locale model)
+        # Call the function
         result = get_modelviewset_urls(
             self.output, 
-            [self.mock_model1], 
             modelviewset_url_paths, 
             self.base_url, 
             self.max_instances
@@ -366,7 +375,8 @@ class GetModelViewsetUrlsTests(TestCase):
         self.assertIn(("app1.model1", "list", "http://testserver/admin/model1/"), result)
         self.assertIn(("app1.model1 (Instance 1)", "edit", "http://testserver/admin/model1/1/"), result)
 
-    def test_get_modelviewset_urls_with_skip_models(self):
+    @patch('wagtail_unveil.helpers.snippet_helpers.get_modelviewset_models')
+    def test_get_modelviewset_urls_with_skip_models(self, mock_get_modelviewset_models):
         """Test get_modelviewset_urls skips models that are already covered by settings admin URLs."""
         # Create a mock model that should be skipped
         mock_skip_model = Mock()
@@ -374,10 +384,12 @@ class GetModelViewsetUrlsTests(TestCase):
         mock_skip_model._meta.app_label = "wagtailcore"
         mock_skip_model._meta.model_name = "site"
         
-        # Call the function with the model that should be skipped
+        # Set up the get_modelviewset_models mock to return the skip model
+        mock_get_modelviewset_models.return_value = [mock_skip_model]
+        
+        # Call the function
         result = get_modelviewset_urls(
             self.output, 
-            [mock_skip_model], 
             self.modelviewset_url_paths, 
             self.base_url, 
             self.max_instances
