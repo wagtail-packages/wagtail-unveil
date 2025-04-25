@@ -1,13 +1,66 @@
 from django.apps import apps
-from wagtail.models import Site
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
+import wagtail
+from wagtail.models import Collection, Site
+from wagtail.contrib.redirects.models import Redirect
 
 from .base import format_url_tuple, get_instance_sample, safe_import
 
 
+# Users management function
+def get_admin_user():
+    User = get_user_model()
+    return User.objects.filter(is_superuser=True)[:1]
+
+
+# Groups management function
+def get_group():
+    return Group.objects.all()[:1]
+
+
+# Collections management function
+def get_collections():
+    return Collection.objects.all().exclude(id=Collection.get_first_root_node().id)[:1]
+
+
+# Redirects management function
+def get_redirects():
+    return Redirect.objects.all()[:1]
+
+
+# Workflows management function
+def get_workflows():
+    from wagtail.models import Workflow
+    return Workflow.objects.all()[:1]
+
+
+# Workflow tasks management function
+def get_tasks():
+    from wagtail.models import Task
+    return Task.objects.all()[:1]
+
+
+# Search promotions management function
+def get_search_promotions():
+    from wagtail.contrib.search_promotions.models import SearchPromotion
+    return SearchPromotion.objects.all()[:1]
+
+
+# Form pages management function
+def get_form_pages():
+    from wagtail.contrib.forms.models import AbstractEmailForm
+    from wagtail.models import Page
+    
+    form_pages = []
+    for page in Page.objects.specific():
+        if isinstance(page, AbstractEmailForm):
+            form_pages.append(page)
+    return form_pages[:5]  # Limit to 5 to avoid too many URLs
+
+
 def get_settings_admin_urls(output, base_url):
     """Get admin URLs for Wagtail settings"""
-    import wagtail
-
     urls = []
     base = base_url.rstrip("/")
 
@@ -53,12 +106,6 @@ def get_settings_admin_urls(output, base_url):
         urls.append(format_url_tuple(f"Settings > {name}", None, "list", section_url))
 
     # Users management - try to get an admin user for edit URL
-    def get_admin_user():
-        from django.contrib.auth import get_user_model
-
-        User = get_user_model()
-        return User.objects.filter(is_superuser=True)[:1]
-
     admins = safe_import(
         output,
         get_admin_user,
@@ -76,12 +123,6 @@ def get_settings_admin_urls(output, base_url):
 
     # Groups management - try to get a group for edit URL
     if apps.is_installed("django.contrib.auth"):
-
-        def get_group():
-            from django.contrib.auth.models import Group
-
-            return Group.objects.all()[:1]
-
         groups = safe_import(
             output,
             get_group,
@@ -98,13 +139,6 @@ def get_settings_admin_urls(output, base_url):
             )
 
     # Collections management - try to get a collection for edit URL
-    def get_collections():
-        from wagtail.models import Collection
-
-        return Collection.objects.all().exclude(id=Collection.get_first_root_node().id)[
-            :1
-        ]
-
     collections = safe_import(
         output,
         get_collections,
@@ -124,13 +158,7 @@ def get_settings_admin_urls(output, base_url):
         )
 
     # Redirects - try to get a redirect for edit URL
-    if apps.is_installed("django.contrib.redirects"):
-
-        def get_redirects():
-            from django.contrib.redirects.models import Redirect
-
-            return Redirect.objects.all()[:1]
-
+    if apps.is_installed("wagtail.contrib.redirects"):
         redirects = safe_import(
             output,
             get_redirects,
@@ -151,12 +179,6 @@ def get_settings_admin_urls(output, base_url):
 
     # Workflows - try to get a workflow for edit URL if the module exists
     if hasattr(wagtail.models, "Workflow"):
-
-        def get_workflows():
-            from wagtail.models import Workflow
-
-            return Workflow.objects.all()[:1]
-
         workflows = safe_import(
             output,
             get_workflows,
@@ -177,12 +199,6 @@ def get_settings_admin_urls(output, base_url):
 
     # Workflow tasks - try to get a workflow task for edit URL if the module exists
     if hasattr(wagtail.models, "Task"):
-
-        def get_tasks():
-            from wagtail.models import Task
-
-            return Task.objects.all()[:1]
-
         tasks = safe_import(
             output,
             get_tasks,
@@ -255,12 +271,6 @@ def get_settings_admin_urls(output, base_url):
 
     # Search promotions - try to get a search promotion for edit URL
     if apps.is_installed("wagtail.contrib.search_promotions"):
-
-        def get_search_promotions():
-            from wagtail.contrib.search_promotions.models import SearchPromotion
-
-            return SearchPromotion.objects.all()[:1]
-
         promotions = safe_import(
             output,
             get_search_promotions,
@@ -337,17 +347,6 @@ def get_settings_admin_urls(output, base_url):
     # Forms - Add form pages and submissions URLs if wagtail.contrib.forms is installed
     if apps.is_installed("wagtail.contrib.forms"):
         output.write("Checking for form pages...")
-
-        # Get all form pages - these are typically subclasses of AbstractEmailForm
-        def get_form_pages():
-            from wagtail.contrib.forms.models import AbstractEmailForm
-            from wagtail.models import Page
-
-            form_pages = []
-            for page in Page.objects.specific():
-                if isinstance(page, AbstractEmailForm):
-                    form_pages.append(page)
-            return form_pages[:5]  # Limit to 5 to avoid too many URLs
 
         form_pages = safe_import(
             output,
