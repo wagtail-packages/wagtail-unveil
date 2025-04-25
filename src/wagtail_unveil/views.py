@@ -6,7 +6,7 @@ from django.views import View
 
 from .helpers.page_helpers import get_page_urls, get_page_models
 from .helpers.snippet_helpers import get_snippet_urls, get_modelviewset_urls
-from .helpers.modeladmin_helpers import get_modeladmin_urls, get_modeladmin_models
+from .helpers.modeladmin_helpers import get_modeladmin_urls
 from .helpers.settings_helpers import get_settings_admin_urls
 from .helpers.media_helpers import get_image_admin_urls, get_document_admin_urls
 
@@ -55,8 +55,7 @@ class UnveilReportView(ReportView):
             counter += 1
         
         # Get modeladmin models and collect modeladmin URLs
-        modeladmin_models, modeladmin_url_paths = get_modeladmin_models()
-        modeladmin_urls = get_modeladmin_urls(output, modeladmin_models, modeladmin_url_paths, base_url, max_instances)
+        modeladmin_urls = get_modeladmin_urls(output, base_url, max_instances)
         for model_name, url_type, url in modeladmin_urls:
             all_urls.append(UrlEntry(counter, model_name, url_type, url))
             counter += 1
@@ -130,8 +129,7 @@ class UnveilApiView(View):
             })
         
         # Get modeladmin models and collect modeladmin URLs
-        modeladmin_models, modeladmin_url_paths = get_modeladmin_models()
-        modeladmin_urls = get_modeladmin_urls(output, modeladmin_models, modeladmin_url_paths, base_url, max_instances)
+        modeladmin_urls = get_modeladmin_urls(output, base_url, max_instances)
         for model_name, url_type, url in modeladmin_urls:
             urls_data.append({
                 'model_name': model_name,

@@ -128,8 +128,6 @@ class Command(BaseCommand):
         # Get URLs for modeladmin models
         modeladmin_urls = get_modeladmin_urls(
             self.stdout,
-            modeladmin_models,
-            modeladmin_url_paths,
             base_url,
             max_instances,
         )

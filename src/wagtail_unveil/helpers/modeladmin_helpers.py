@@ -49,12 +49,15 @@ def get_modeladmin_models():
 
 
 def get_modeladmin_urls(
-    output, modeladmin_models, modeladmin_url_paths, base_url, max_instances
+    output, base_url, max_instances
 ):
     """Get admin URLs for modeladmin models"""
     urls = []
     # Strip trailing slash from base_url to avoid double slashes
     base = base_url.rstrip("/")
+
+    # Get modeladmin models and URL paths directly
+    modeladmin_models, modeladmin_url_paths = get_modeladmin_models()
 
     for model in modeladmin_models:
         model_name = f"{model._meta.app_label}.{model._meta.model_name}"
