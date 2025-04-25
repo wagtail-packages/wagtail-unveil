@@ -31,10 +31,7 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/wagtail-packages/wagtail-unveil"
-Documentation = "https://github.com/wagtail-packages/wagtail-unveil#readme"
-Issues = "https://github.com/wagtail-packages/wagtail-unveil/issues"
-Changelog = "https://github.com/wagtail-packages/wagtail-unveil/blob/main/CHANGELOG.md"
+homepage = "https://github.com/wagtail-packages/wagtail-unveil"
 
 requires-python = ">=3.9"
 dependencies = [
