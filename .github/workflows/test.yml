@@ -33,6 +33,29 @@ jobs:
       run: |
         tox
 
+  ci-env-test:
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
+      with:
+        python-version: '3.13'  # Use Python 3.13 for development/main branch testing
+        enable-cache: true
+        cache-dependency-glob: "uv.lock"
+    
+    - name: Install tox
+      run: |
+        uv pip install tox tox-uv
+    
+    - name: Run development/main branch tests
+      run: |
+        tox -e wtmain-djmain-py313
+      continue-on-error: true  # Allow failure as per tox configuration
+
   cli-test:
     runs-on: ubuntu-latest
     needs: test
