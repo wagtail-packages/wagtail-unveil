@@ -9,7 +9,8 @@
                 <th>Model Name</th>
                 <th>URL Type</th>
                 <th>URL</th>
-                <th>Actionssss</th>
+                <th>Actions</th>
+                <th>Check Result</th>
             </tr>
         </thead>
         <tbody>
@@ -21,6 +22,11 @@
                     <td>{{ entry.url }}</td>
                     <td>
                         <a href="{{ entry.url }}" target="_blank" class="button button-small">View</a>
+                    </td>
+                    <td data-result>
+                        <svg class="icon icon-radio-empty w-w-4 w-h-4" aria-hidden="true"><use href="#icon-radio-empty"></use></svg>
+                        <svg class="icon icon-circle-check w-w-4 w-h-4" aria-hidden="true"><use href="#icon-circle-check"></use></svg>
+                        <svg class="icon icon-error w-w-4 w-h-4" aria-hidden="true"><use href="#icon-error"></use></svg>
                     </td>
                 </tr>
             {% endfor %}
