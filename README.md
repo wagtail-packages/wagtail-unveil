@@ -2,10 +2,6 @@
 
 A Wagtail package that helps map and expose admin and frontend URLs in your Wagtail project.
 
-## Overview
-
-Wagtail Unveil provides a single command to discover and output all available admin and frontend URLs in your Wagtail project.
-
 ## Features
 
 ### URL Discovery
