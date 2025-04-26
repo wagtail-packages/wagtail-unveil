@@ -8,9 +8,14 @@
             var checkUrlsButton = document.querySelectorAll('[data-action="check-urls"]')[0];
             var checkUrls = document.querySelectorAll('[data-check]');
 
-            // Hide the success and error SVGs on page load, only show the empty radio button
+            // Hide the success and error SVGs on page load, only show the empty radio button in mid-grey
             document.querySelectorAll('[data-result] .icon-circle-check, [data-result] .icon-error').forEach(svg => {
                 svg.style.display = 'none';
+            });
+
+            // Set the empty radio icon to mid-grey
+            document.querySelectorAll('[data-result] .icon-radio-empty').forEach(svg => {
+                svg.style.color = 'rgb(128, 128, 128)'; // Mid-grey color
             });
 
             if (!checkUrlsButton) {
@@ -109,11 +114,15 @@
                             svg.style.display = 'none';
                         });
 
-                        // Show the appropriate SVG based on the result
+                        // Show the appropriate SVG based on the result and set its color
                         if (isValid) {
-                            resultCell.querySelector('.icon-circle-check').style.display = 'inline-block';
+                            const successIcon = resultCell.querySelector('.icon-circle-check');
+                            successIcon.style.display = 'inline-block';
+                            successIcon.style.color = 'rgb(27, 134, 102)'; // Darker green
                         } else {
-                            resultCell.querySelector('.icon-error').style.display = 'inline-block';
+                            const errorIcon = resultCell.querySelector('.icon-error');
+                            errorIcon.style.display = 'inline-block';
+                            errorIcon.style.color = 'rgb(202, 59, 59)'; // Specified error color
                         }
                     }
 
