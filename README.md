@@ -6,6 +6,31 @@ A Wagtail package that helps map and expose admin and frontend URLs in your Wagt
 
 Wagtail Unveil provides a single command to discover and output all available admin and frontend URLs in your Wagtail project.
 
+## Features
+
+### URL Discovery
+
+Automatically discovers and lists all available Wagtail admin and frontend URLs in your project.
+
+### JSON API Endpoint
+
+Access all your project URLs via a JSON API endpoint, therefore your can use external tools to consume the data.
+
+  - Configurable parameters: `max_instances`, `base_url`, `group_by`
+  - Grouping options: Group URLs by interface (backend/frontend) or by URL type
+  - Comprehensive coverage: Pages, snippets, ModelAdmin, ModelViewSet, settings, images, and documents
+  - Detailed metadata with counts for different URL types and categories
+
+### Command Line Interface
+
+Use the management command to quickly list and export URLs iwth configurable output to  control the level of detail and output format.
+
+### Report View
+
+View your project's URLs in a user-friendly Wagtail admin interface with interactive URL validation: Check if URLs are accessible with visual success/error indicators
+  
+![Report View Screenshot](./docs/assets/report-interface.png)
+
 ## Install the package into your Wagtail project
 
 Suggested install method is via pip but you should use the method that best fits your project setup:
@@ -42,20 +67,6 @@ The command has a few flags that can be used to adjust the output. The flags are
 - `--output`: Output the urls to the console or to a file. Default is console.
 - `--file`: The file name to output the urls to. This is only used if the output option is set to file the file type is a simple text file.
 - `--max-instances`: The maximum number of instances to show for each URL. This is used to adjust the number of instances shown in the output. The default is 1 a value of 0 will show all instances.
-
-## Features
-
-- **URL Discovery**: Automatically discovers and lists all available Wagtail admin and frontend URLs in your project
-- **JSON API Endpoint**: Access all your project URLs via a JSON API endpoint, therefore your can use external tools to consume the data
-  - Configurable parameters: `max_instances`, `base_url`, `group_by`
-  - Grouping options: Group URLs by interface (backend/frontend) or by URL type
-  - Comprehensive coverage: Pages, snippets, ModelAdmin, ModelViewSet, settings, images, and documents
-  - Detailed metadata with counts for different URL types and categories
-- **Command Line Interface**: Use the management command to quickly list and export URLs
-- **Configurable Output**: Control the level of detail and output format
-- **Report View**: View your project's URLs in a user-friendly Wagtail admin interface
-  - Interactive URL validation: Check if URLs are accessible with visual success/error indicators
-  [![Report View Screenshot](./docs/assets/report-interface.png)
 
 ## Upcoming Features
 
