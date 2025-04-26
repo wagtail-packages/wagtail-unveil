@@ -12,36 +12,13 @@ from .helpers.settings_helpers import get_settings_admin_urls
 from .helpers.media_helpers import get_image_admin_urls, get_document_admin_urls
 
 
-# class UnveilReportFilterSet(WagtailFilterSet):
-#     """
-#     Custom filter set for the Unveil report.
-#     This can be extended to add custom filters if needed.
-#     """
-#     # Add any custom filters here if needed
-#     class Meta:
-#         model = None  # Set to the appropriate model if needed
-#         fields = []
-#         # You can also define custom widgets or other options here
-#         # widgets = {
-#         #     'field_name': CustomWidget(),
-#         # }
-
-
 class UnveilReportView(ReportView):
-    # filterset_class = UnveilReportFilterSet
     index_url_name = "unveil_report"
     index_results_url_name = "unveil_report_results"
-    header_icon = "user"
+    header_icon = "tasks"
     template_name = "wagtail_unveil/unveil_report.html"
     results_template_name = "wagtail_unveil/unveil_report_results.html"
-    page_title = "Unveil Report"
-    # columns = [
-    #     Column("id", label="ID"),
-    #     Column("model_name", label="Model Name", sort_key="model_name"),
-    #     Column("url_type", label="URL Type"),
-    #     Column("url", label="URL"),
-    #     Column("actions", label="Actions"),
-    # ]
+    page_title = "Unveil URL's"
     list_export = [
         "id",
         "model_name",
@@ -59,17 +36,13 @@ class UnveilReportView(ReportView):
     def get_header_buttons(self):
          return [
             HeaderButton(
-                label="Check URLs",
-                # url="https://example.com",
+                label="Run Checks",
                 icon_name="link",
                 attrs={
                     "data-action": "check-urls",
                 },
             ),
         ]
-    # default_ordering = "model_name"
-    # is_searchable = True
-    # search_fields = ["model_name", "url_type", "url"]
 
     def get_filterset_kwargs(self):
         # Get the base queryset and pass it to the filterset

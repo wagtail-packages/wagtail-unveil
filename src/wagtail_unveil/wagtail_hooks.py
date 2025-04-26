@@ -12,10 +12,11 @@ def register_unveil_report_menu_item():
     Register the Unveil report menu item in the Wagtail admin.
     """
     return AdminOnlyMenuItem(
-        "Unveil Report",
+        "Unveil URL's",
         reverse("unveil_report"),
         name="unveil_report",
         order=10000,
+        icon_name="tasks",
     )
 
 
