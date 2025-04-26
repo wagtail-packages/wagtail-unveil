@@ -55,6 +55,7 @@ The command has a few flags that can be used to adjust the output. The flags are
 - **Configurable Output**: Control the level of detail and output format
 - **Report View**: View your project's URLs in a user-friendly Wagtail admin interface
   - Interactive URL validation: Check if URLs are accessible with visual success/error indicators
+  [![Report View Screenshot](./docs/assets/report-interface.png)
 
 ## Upcoming Features
 
