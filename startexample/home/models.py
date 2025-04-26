@@ -20,3 +20,6 @@ class Book(models.Model):
     )
 
     panels = [FieldPanel("title"), FieldPanel("author"), FieldPanel("cover_photo")]
+
+    def __str__(self):
+        return self.title

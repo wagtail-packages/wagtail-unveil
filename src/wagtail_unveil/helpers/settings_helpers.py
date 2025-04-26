@@ -74,7 +74,7 @@ def get_form_pages():
     return form_pages[:5] if form_pages else []  # Limit to 5 to avoid too many URLs
 
 
-def get_settings_admin_urls(output, base_url):
+def get_settings_admin_urls(output, base_url, max_instances=1):
     """Get admin URLs for Wagtail settings"""
     urls = []
     base = base_url.rstrip("/")
@@ -149,6 +149,10 @@ def get_settings_admin_urls(output, base_url):
         fallback_value=[],
         error_msg="Error getting collection instances",
     )
+
+    # Apply max_instances limit if more than one collection exists
+    if len(collections) > max_instances and max_instances > 0:
+        collections = collections[:max_instances]
 
     for collection in collections:
         collection_edit_url = f"{base}/admin/collections/{collection.id}/"
@@ -237,7 +241,7 @@ def get_settings_admin_urls(output, base_url):
 
     if locale_found:
         # Try to get locales
-        locales = get_instance_sample(output, Locale, max_instances=1)
+        locales = get_instance_sample(output, Locale, max_instances=max_instances)
         for locale in locales:
             locale_edit_url = f"{base}/admin/locales/edit/{locale.id}/"
             urls.append(

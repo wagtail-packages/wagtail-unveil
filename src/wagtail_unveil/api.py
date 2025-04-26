@@ -19,6 +19,7 @@ class UnveilApiView(View):
         # Parameters
         max_instances = int(request.GET.get('max_instances', 1))
         base_url = request.GET.get('base_url', "http://localhost:8000")
+        group_by = request.GET.get('group_by', '').lower()
         
         # Collect all URLs
         urls_data = []
@@ -60,7 +61,7 @@ class UnveilApiView(View):
             })
         
         # Collect settings URLs
-        settings_urls = get_settings_admin_urls(output, base_url)
+        settings_urls = get_settings_admin_urls(output, base_url, max_instances)
         for model_name, url_type, url in settings_urls:
             urls_data.append({
                 'model_name': model_name,
@@ -86,43 +87,61 @@ class UnveilApiView(View):
                 'url': url
             })
         
-        # Group by backend/frontend
-        group_by = request.GET.get('group_by', '').lower()
+        # Count backend and frontend URLs regardless of grouping
+        backend_urls = []
+        frontend_urls = []
         
+        for item in urls_data:
+            url_type = item['url_type']
+            url = item['url']
+            
+            # URLs with 'frontend' type are frontend, URLs with '/admin/' are backend,
+            # all other URLs need to be categorized based on their characteristics
+            if url_type == 'frontend':
+                frontend_urls.append(item)
+            elif '/admin/' in url or url_type in ['admin', 'edit', 'list']:
+                backend_urls.append(item)
+            else:
+                # If we can't determine, default to frontend
+                frontend_urls.append(item)
+        
+        # Add parameters to response metadata
+        response_data = {
+            'meta': {
+                'max_instances': max_instances,
+                'base_url': base_url,
+                'group_by': group_by if group_by else 'none',
+                'backend_count': len(backend_urls),
+                'frontend_count': len(frontend_urls),
+                'total_urls': len(urls_data)  # Total URLs collected
+            }
+        }
+        
+        # Group by backend/frontend
         if group_by == 'interface':
-            # Group URLs into backend (admin) and frontend categories
-            backend_urls = []
-            frontend_urls = []
-            
-            for item in urls_data:
-                url_type = item['url_type']
-                url = item['url']
-                
-                # URLs with 'frontend' type are frontend, URLs with '/admin/' are backend,
-                # all other URLs need to be categorized based on their characteristics
-                if url_type == 'frontend':
-                    frontend_urls.append(item)
-                elif '/admin/' in url or url_type in ['admin', 'edit', 'list']:
-                    backend_urls.append(item)
-                else:
-                    # If we can't determine, default to frontend
-                    frontend_urls.append(item)
-            
             grouped_data = {
                 'backend': backend_urls,
                 'frontend': frontend_urls
             }
             
-            return JsonResponse({'urls': grouped_data})
+            response_data['urls'] = grouped_data
+            return JsonResponse(response_data)
         elif group_by == 'type':
             # Keep the original type grouping for backward compatibility
             grouped_data = {}
+            
             for item in urls_data:
                 url_type = item['url_type']
                 if url_type not in grouped_data:
                     grouped_data[url_type] = []
                 grouped_data[url_type].append(item)
-            return JsonResponse({'urls': grouped_data})
             
+            # Update metadata with counts for each type
+            response_data['meta']['type_counts'] = {url_type: len(items) for url_type, items in grouped_data.items()}
+            
+            response_data['urls'] = grouped_data
+            return JsonResponse(response_data)
+        
         # No grouping, return flat list
-        return JsonResponse({'urls': urls_data})
+        response_data['urls'] = urls_data
+        return JsonResponse(response_data)
