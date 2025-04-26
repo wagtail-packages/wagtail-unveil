@@ -19,31 +19,6 @@ Access all your project URLs via a JSON API endpoint, therefore your can use ext
 
 ### Command Line Interface
 
-Use the management command to quickly list and export URLs with configurable output to  control the level of detail and output format.
-
-### Report View
-
-View your project's URLs in a user-friendly Wagtail admin interface with interactive URL validation: Check if URLs are accessible with visual success/error indicators
-  
-![Report View Screenshot](./docs/assets/report-interface.png)
-
-## Features
-
-### URL Discovery
-
-Automatically discovers and lists all available Wagtail admin and frontend URLs in your project.
-
-### JSON API Endpoint
-
-Access all your project URLs via a JSON API endpoint, therefore your can use external tools to consume the data.
-
-  - Configurable parameters: `max_instances`, `base_url`, `group_by`
-  - Grouping options: Group URLs by interface (backend/frontend) or by URL type
-  - Comprehensive coverage: Pages, snippets, ModelAdmin, ModelViewSet, settings, images, and documents
-  - Detailed metadata with counts for different URL types and categories
-
-### Command Line Interface
-
 Use the management command to quickly list and export URLs iwth configurable output to  control the level of detail and output format.
 
 ### Report View
