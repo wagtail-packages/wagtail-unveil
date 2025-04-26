@@ -70,9 +70,7 @@ The command has a few flags that can be used to adjust the output. The flags are
 
 ## Upcoming Features
 
-- Additional Wagtail admin pages to show the URLs in a more user-friendly way
-- Enhanced URL validation for checking frontend and backend URLs
-- Performance optimizations for larger Wagtail installations
+I'm maintaining a list of features that I plan to add in the future or i'm currently working on [here](https://github.com/wagtail-packages/wagtail-unveil/issues). If you have any suggestions or requests, please feel free to open an issue.
 
 ## Contributing
 
