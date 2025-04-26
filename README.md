@@ -19,7 +19,7 @@ Access all your project URLs via a JSON API endpoint, therefore your can use ext
 
 ### Command Line Interface
 
-Use the management command to quickly list and export URLs iwth configurable output to  control the level of detail and output format.
+Use the management command to quickly list and export URLs with configurable output to  control the level of detail and output format.
 
 ### Report View
 
