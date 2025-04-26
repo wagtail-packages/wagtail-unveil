@@ -1,7 +1,5 @@
-from django.apps import apps
-from django.conf import settings
-from wagtail.documents.models import Document
-from wagtail.images.models import Image
+from wagtail.images import get_image_model as get_image_model_wagtail
+from wagtail.documents import get_document_model as get_document_model_wagtail
 
 from .base import (
     format_url_tuple,
@@ -12,23 +10,19 @@ from .base import (
 
 
 def get_image_model():
-    """Get the image model from settings if specified, otherwise use the default"""
-    if hasattr(settings, "WAGTAILIMAGES_IMAGE_MODEL"):
-        try:
-            return apps.get_model(settings.WAGTAILIMAGES_IMAGE_MODEL)
-        except (ValueError, LookupError):
-            pass
-    return Image
+    """
+    This currently returns the core get_image_model function from Wagtail.
+    Not sure yet if this need to be overridden in some way.
+    """
+    return get_image_model_wagtail()
 
 
 def get_document_model():
-    """Get the document model from settings if specified, otherwise use the default"""
-    if hasattr(settings, "WAGTAILDOCS_DOCUMENT_MODEL"):
-        try:
-            return apps.get_model(settings.WAGTAILDOCS_DOCUMENT_MODEL)
-        except (ValueError, LookupError):
-            pass
-    return Document
+    """
+    This currently returns the core get_document_model function from Wagtail.
+    Not sure yet if this need to be overridden in some way.
+    """
+    return get_document_model_wagtail()
 
 
 def get_image_admin_urls(output, base_url, max_instances):

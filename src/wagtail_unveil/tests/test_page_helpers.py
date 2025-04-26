@@ -1,9 +1,8 @@
 from django.test import TestCase
 from django.db import DatabaseError
 from io import StringIO
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 
-from wagtail.models import Page
 
 from wagtail_unveil.helpers.page_helpers import (
     get_page_models,
@@ -13,55 +12,26 @@ from wagtail_unveil.helpers.page_helpers import (
 
 
 class GetPageModelsTests(TestCase):
-    @patch('wagtail_unveil.helpers.page_helpers.apps')
-    def test_get_page_models(self, mock_apps):
+    @patch('wagtail_unveil.helpers.page_helpers.get_page_models_wagtail')
+    def test_get_page_models(self, mock_get_page_models_wagtail):
         """Test that get_page_models returns all models that inherit from Page."""
-        # Create mock app configs and models
-        # Use MagicMock with spec_set to proper handle issubclass checks
-        mock_model1 = MagicMock(spec_set=type)
-        mock_model1.__name__ = 'MockModel1'
-        # Configure issubclass to return True for Page
-        mock_model1.__instancecheck__.return_value = False
+        # Create mock models
+        mock_model1 = Mock()
+        mock_model2 = Mock()
         
-        mock_model2 = MagicMock(spec_set=type)
-        mock_model2.__name__ = 'MockModel2'
-        mock_model2.__instancecheck__.return_value = False
+        # Set up the mock to return our test models
+        mock_get_page_models_wagtail.return_value = [mock_model1, mock_model2]
         
-        # Non-page model shouldn't be included
-        mock_non_page_model = MagicMock(spec_set=type)
-        mock_non_page_model.__name__ = 'NonPageModel'
-        mock_non_page_model.__instancecheck__.return_value = False
+        # Call the function
+        result = get_page_models()
         
-        # Set up the apps.get_app_configs mock to return our mock app configs
-        mock_app_config1 = Mock()
-        mock_app_config1.get_models.return_value = [mock_model1, mock_non_page_model]
+        # Check we got the expected models
+        self.assertEqual(len(result), 2)
+        self.assertIn(mock_model1, result)
+        self.assertIn(mock_model2, result)
         
-        mock_app_config2 = Mock()
-        mock_app_config2.get_models.return_value = [mock_model2, Page]
-        
-        mock_apps.get_app_configs.return_value = [mock_app_config1, mock_app_config2]
-        
-        # Configure the issubclass behavior for our mocks
-        with patch('wagtail_unveil.helpers.page_helpers.issubclass') as mock_issubclass:
-            # Configure mock_issubclass to return True for page models and False for others
-            def issubclass_side_effect(cls, class_info):
-                if cls is mock_model1 or cls is mock_model2:
-                    return True
-                if cls is Page:  # Should be excluded as it equals Page
-                    return True
-                return False
-                
-            mock_issubclass.side_effect = issubclass_side_effect
-            
-            # Call the function
-            result = get_page_models()
-            
-            # We should get back only the models that inherit from Page and are not Page itself
-            self.assertEqual(len(result), 2)
-            self.assertIn(mock_model1, result)
-            self.assertIn(mock_model2, result)
-            self.assertNotIn(Page, result)
-            self.assertNotIn(mock_non_page_model, result)
+        # Verify the Wagtail function was called
+        mock_get_page_models_wagtail.assert_called_once()
 
 
 class GetPageUrlsTests(TestCase):
@@ -98,16 +68,20 @@ class GetPageUrlsTests(TestCase):
         self.base_url = "http://testserver"
         self.max_instances = 5
 
+    @patch('wagtail_unveil.helpers.page_helpers.get_page_models')
     @patch('wagtail_unveil.helpers.page_helpers.model_has_instances')
     @patch('wagtail_unveil.helpers.page_helpers.get_instance_sample')
-    def test_get_page_urls_with_instances(self, mock_get_instance_sample, mock_model_has_instances):
+    def test_get_page_urls_with_instances(self, mock_get_instance_sample, mock_model_has_instances, mock_get_page_models):
         """Test get_page_urls with models that have instances."""
+        # Set up the get_page_models mock to return our test models
+        mock_get_page_models.return_value = self.page_models
+        
         # Set up the mocks to return instances for the first model and no instances for the second
         mock_model_has_instances.side_effect = [True, False]
         mock_get_instance_sample.return_value = [self.mock_instance1, self.mock_instance2, self.mock_instance3]
         
-        # Call the function
-        result = get_page_urls(self.output, self.page_models, self.base_url, self.max_instances)
+        # Call the function with the updated signature
+        result = get_page_urls(self.output, self.base_url, self.max_instances)
         
         # Check that we get the expected URLs
         # 3 edit URLs + 3 frontend URLs + 1 listing URL for the model with no instances
@@ -133,16 +107,20 @@ class GetPageUrlsTests(TestCase):
         # Check the output message for models with no instances
         self.assertIn("Note: app2.model2 has no instances", self.output.getvalue())
 
+    @patch('wagtail_unveil.helpers.page_helpers.get_page_models')
     @patch('wagtail_unveil.helpers.page_helpers.model_has_instances')
     @patch('wagtail_unveil.helpers.page_helpers.get_instance_sample')
-    def test_get_page_urls_without_instances(self, mock_get_instance_sample, mock_model_has_instances):
+    def test_get_page_urls_without_instances(self, mock_get_instance_sample, mock_model_has_instances, mock_get_page_models):
         """Test get_page_urls with models that have no instances."""
+        # Set up the get_page_models mock to return our test models
+        mock_get_page_models.return_value = self.page_models
+        
         # Set up the mocks to return no instances for both models
         mock_model_has_instances.side_effect = [False, False]
         mock_get_instance_sample.return_value = []
         
-        # Call the function
-        result = get_page_urls(self.output, self.page_models, self.base_url, self.max_instances)
+        # Call the function with the updated signature
+        result = get_page_urls(self.output, self.base_url, self.max_instances)
         
         # Check that we get the expected URLs
         self.assertEqual(len(result), 2)  # 2 list URLs
@@ -155,17 +133,21 @@ class GetPageUrlsTests(TestCase):
         self.assertIn("Note: app1.model1 has no instances", self.output.getvalue())
         self.assertIn("Note: app2.model2 has no instances", self.output.getvalue())
         
+    @patch('wagtail_unveil.helpers.page_helpers.get_page_models')
     @patch('wagtail_unveil.helpers.page_helpers.model_has_instances')
     @patch('wagtail_unveil.helpers.page_helpers.get_instance_sample')
-    def test_get_page_urls_with_trailing_slash_in_base_url(self, mock_get_instance_sample, mock_model_has_instances):
+    def test_get_page_urls_with_trailing_slash_in_base_url(self, mock_get_instance_sample, mock_model_has_instances, mock_get_page_models):
         """Test get_page_urls with a base_url that has a trailing slash."""
+        # Set up the get_page_models mock to return only the first model
+        mock_get_page_models.return_value = [self.mock_model1]
+        
         # Set up the mocks to return instances for the first model
         mock_model_has_instances.return_value = True
         mock_get_instance_sample.return_value = [self.mock_instance1]
         
         # Call the function with a base_url that has a trailing slash
         base_url_with_slash = "http://testserver/"
-        result = get_page_urls(self.output, [self.mock_model1], base_url_with_slash, self.max_instances)
+        result = get_page_urls(self.output, base_url_with_slash, self.max_instances)
         
         # Check that we get the expected URLs without double slashes
         self.assertEqual(len(result), 2)  # 1 edit URL + 1 frontend URL

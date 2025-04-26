@@ -3,6 +3,7 @@ from importlib import import_module
 
 from django.apps import apps
 from django.contrib.contenttypes.models import ContentType
+from wagtail.snippets.models import get_snippet_models
 
 from .base import (
     format_url_tuple,
@@ -12,10 +13,10 @@ from .base import (
 )
 
 
-def get_snippet_urls(output, snippet_models, base_url, max_instances):
+def get_snippet_urls(output, base_url, max_instances):
     """Get admin URLs for snippet models, including both list and edit URLs"""
     urls = []
-    for model in snippet_models:
+    for model in get_snippet_models():
         model_name = f"{model._meta.app_label}.{model._meta.model_name}"
         content_type = ContentType.objects.get_for_model(model)
 
@@ -57,8 +58,6 @@ def get_modelviewset_models():
     This is a bit more complex since we need to inspect the wagtail_hooks modules
     """
     modelviewset_models = []
-    # Dictionary to store custom base URL paths for models
-    modelviewset_url_paths = {}
 
     # Look for apps with wagtail_hooks module
     for app_config in apps.get_app_configs():
@@ -72,22 +71,22 @@ def get_modelviewset_models():
                         # Only add the model if it's not None
                         if obj.model is not None:
                             modelviewset_models.append(obj.model)
-                            # Store custom base_url_path if it exists
-                            if hasattr(obj, "base_url_path") and obj.base_url_path:
-                                modelviewset_url_paths[obj.model] = obj.base_url_path
         except (ImportError, ModuleNotFoundError):
             # App doesn't have wagtail_hooks module
             pass
 
-    return modelviewset_models, modelviewset_url_paths
+    return modelviewset_models
 
 
 def get_modelviewset_urls(
-    output, modelviewset_models, modelviewset_url_paths, base_url, max_instances
+    output, base_url, max_instances
 ):
     """Get admin URLs for models registered with ModelViewSet"""
     urls = []
     base = base_url.rstrip("/")
+
+    # Get the models inside the function instead of receiving them as a parameter
+    modelviewset_models = get_modelviewset_models()
 
     # Models that should be skipped because they're already included in settings
     skip_models = ["wagtailcore.locale", "wagtailcore.site"]
