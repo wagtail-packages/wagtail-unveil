@@ -47,6 +47,35 @@ INSTALLED_APPS = [
 ]
 ```
 
+## Enabling the API
+
+To enable the JSON API endpoint, add the following to your project's main urls.py file:
+
+```python
+from django.urls import include, path
+
+urlpatterns = [
+    # ... your existing URL patterns
+    path("unveil/", include("wagtail_unveil.urls")),
+    # ...
+]
+```
+
+Once configured, you can access the API at:
+```
+http://your-domain.com/unveil/urls/
+```
+
+The API accepts the following optional query parameters:
+- `max_instances`: Maximum number of instances to show per model (default: 1)
+- `base_url`: The base URL to use for generated URLs (default: http://localhost:8000)
+- `group_by`: How to group the URLs. Options are `interface` (backend/frontend) or `type`
+
+Example API request:
+```
+http://your-domain.com/unveil/urls/?max_instances=2&group_by=interface
+```
+
 ## Usage
 
 ### Command Line
