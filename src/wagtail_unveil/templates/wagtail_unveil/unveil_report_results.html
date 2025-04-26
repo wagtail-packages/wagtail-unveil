@@ -1,5 +1,5 @@
 {% extends 'wagtailadmin/reports/base_report_results.html' %}
-{% load wagtailadmin_tags %}
+{% load wagtailadmin_tags static %}
 
 {% block results %}
     <table class="listing">
@@ -9,12 +9,12 @@
                 <th>Model Name</th>
                 <th>URL Type</th>
                 <th>URL</th>
-                <th>Actions</th>
+                <th>Actionssss</th>
             </tr>
         </thead>
         <tbody>
             {% for entry in object_list %}
-                <tr>
+                <tr data-url="{{ entry.url }}" data-id="{{ entry.id }}" data-check>
                     <td>{{ entry.id }}</td>
                     <td>{{ entry.model_name }}</td>
                     <td>{{ entry.url_type }}</td>
