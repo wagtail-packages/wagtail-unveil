@@ -102,7 +102,7 @@ class GetImageAdminUrlsTests(TestCase):
         result = get_image_admin_urls(self.output, self.base_url, self.max_instances)
         
         # Check the results
-        self.assertEqual(len(result), 3)  # 1 list + 2 edit URLs
+        self.assertEqual(len(result), 5)  # 1 list + 2 edit URLs + 2 delete URLs
         
         # Check that the list URL was added with the correct format
         mock_format_url_tuple.assert_any_call("wagtailimages.image", None, "list", "http://testserver/admin/images/")
@@ -110,6 +110,10 @@ class GetImageAdminUrlsTests(TestCase):
         # Check that edit URLs were added with the correct format
         mock_format_url_tuple.assert_any_call("wagtailimages.image", "Truncated Image 1", "edit", "http://testserver/admin/images/1/")
         mock_format_url_tuple.assert_any_call("wagtailimages.image", "Truncated Image 2", "edit", "http://testserver/admin/images/2/")
+        
+        # Check that delete URLs were added with the correct format
+        mock_format_url_tuple.assert_any_call("wagtailimages.image", "Truncated Image 1", "delete", "http://testserver/admin/images/1/delete/")
+        mock_format_url_tuple.assert_any_call("wagtailimages.image", "Truncated Image 2", "delete", "http://testserver/admin/images/2/delete/")
 
     @patch('wagtail_unveil.helpers.media_helpers.get_image_model')
     @patch('wagtail_unveil.helpers.media_helpers.model_has_instances')
@@ -120,7 +124,7 @@ class GetImageAdminUrlsTests(TestCase):
         mock_get_image_model.return_value = self.mock_image_model
         mock_model_has_instances.return_value = False
         
-        mock_format_url_tuple.side_effect = lambda model, instance_name, url_type, url: (model, url_type, url)
+        mock_format_url_tuple.side_effect = lambda model, instance_name, url_type, url: (model, instance_name, url_type)
         
         # Call the function
         result = get_image_admin_urls(self.output, self.base_url, self.max_instances)
@@ -240,13 +244,13 @@ class GetDocumentAdminUrlsTests(TestCase):
         
         mock_truncate_instance_name.side_effect = lambda x: f"Truncated {x}"
         
-        mock_format_url_tuple.side_effect = lambda model, instance_name, url_type, url: (model, url_type, url)
+        mock_format_url_tuple.side_effect = lambda model, instance_name, url_type, url: (model, instance_name, url_type)
         
         # Call the function
         result = get_document_admin_urls(self.output, self.base_url, self.max_instances)
         
         # Check the results
-        self.assertEqual(len(result), 3)  # 1 list + 2 edit URLs
+        self.assertEqual(len(result), 5)  # 1 list + 2 edit URLs + 2 delete URLs
         
         # Check that the list URL was added with the correct format
         mock_format_url_tuple.assert_any_call("wagtaildocs.document", None, "list", "http://testserver/admin/documents/")
@@ -257,6 +261,14 @@ class GetDocumentAdminUrlsTests(TestCase):
         )
         mock_format_url_tuple.assert_any_call(
             "wagtaildocs.document", "Truncated Document 2", "edit", "http://testserver/admin/documents/edit/2/"
+        )
+        
+        # Check that delete URLs were added with the correct format
+        mock_format_url_tuple.assert_any_call(
+            "wagtaildocs.document", "Truncated Document 1", "delete", "http://testserver/admin/documents/delete/1/"
+        )
+        mock_format_url_tuple.assert_any_call(
+            "wagtaildocs.document", "Truncated Document 2", "delete", "http://testserver/admin/documents/delete/2/"
         )
 
     @patch('wagtail_unveil.helpers.media_helpers.get_document_model')
