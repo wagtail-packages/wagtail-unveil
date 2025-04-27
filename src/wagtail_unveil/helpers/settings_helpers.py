@@ -241,18 +241,20 @@ def get_settings_admin_urls(output, base_url, max_instances=1):
     if locale_found:
         # Try to get locales
         locales = get_instance_sample(output, Locale, max_instances=max_instances)
-        for locale in locales:
-            locale_edit_url = f"{base}/admin/locales/edit/{locale.id}/"
-            urls.append(
-                format_url_tuple(
-                    f"Settings > Locales > {locale.language_code}",
-                    None,
-                    "edit",
-                    locale_edit_url,
+        if locales:
+            # Only add actual locale instances if they exist
+            for locale in locales:
+                locale_edit_url = f"{base}/admin/locales/edit/{locale.id}/"
+                urls.append(
+                    format_url_tuple(
+                        f"Settings > Locales > {locale.language_code}",
+                        None,
+                        "edit",
+                        locale_edit_url,
+                    )
                 )
-            )
         else:
-            # Add an example edit URL even if we don't have a locale instance
+            # Add an example URL only if no instances found
             locale_edit_url = f"{base}/admin/locales/edit/1/"
             urls.append(
                 format_url_tuple(
