@@ -66,8 +66,8 @@ class GetSnippetUrlsTests(TestCase):
         result = get_snippet_urls(self.output, self.base_url, self.max_instances)
         
         # Check that we get the expected URLs
-        # 1 list URL + 2 edit URLs for the model with instances + 1 list URL for the model without instances
-        self.assertEqual(len(result), 4)
+        # 1 list URL + 2 edit URLs + 2 delete URLs for the model with instances + 1 list URL for the model without instances
+        self.assertEqual(len(result), 6)
         
         # Check list URL for the model with instances
         self.assertIn(("app1.model1", "list", "http://testserver/admin/snippets/app1/model1/"), result)
@@ -75,6 +75,10 @@ class GetSnippetUrlsTests(TestCase):
         # Check edit URLs for instances
         self.assertIn(("app1.model1 (Instance 1)", "edit", "http://testserver/admin/snippets/app1/model1/1/"), result)
         self.assertIn(("app1.model1 (Instance 2)", "edit", "http://testserver/admin/snippets/app1/model1/2/"), result)
+        
+        # Check delete URLs for instances
+        self.assertIn(("app1.model1 (Instance 1)", "delete", "http://testserver/admin/snippets/app1/model1/1/delete/"), result)
+        self.assertIn(("app1.model1 (Instance 2)", "delete", "http://testserver/admin/snippets/app1/model1/2/delete/"), result)
         
         # Check list URL for the model without instances
         self.assertIn(("app2.model2 (NO INSTANCES)", "list", "http://testserver/admin/snippets/app2/model2/"), result)
@@ -302,8 +306,8 @@ class GetModelViewsetUrlsTests(TestCase):
         self.assertIn("Skipping duplicate wagtailcore.locale URLs", self.output.getvalue())
         
         # We should only get URLs for the regular model (locale is skipped)
-        # 1 list URL + 2 edit URLs = 3 URLs total
-        self.assertEqual(len(result), 3)
+        # 1 list URL + 2 edit URLs + 2 delete URLs = 5 URLs total
+        self.assertEqual(len(result), 5)
         
         # Check list URL for regular model
         self.assertIn(("app1.model1", "list", "http://testserver/admin/model1/"), result)
@@ -311,6 +315,10 @@ class GetModelViewsetUrlsTests(TestCase):
         # Check edit URLs for regular model
         self.assertIn(("app1.model1 (Instance 1)", "edit", "http://testserver/admin/model1/1/"), result)
         self.assertIn(("app1.model1 (Instance 2)", "edit", "http://testserver/admin/model1/2/"), result)
+        
+        # Check delete URLs for regular model
+        self.assertIn(("app1.model1 (Instance 1)", "delete", "http://testserver/admin/model1/1/delete/"), result)
+        self.assertIn(("app1.model1 (Instance 2)", "delete", "http://testserver/admin/model1/2/delete/"), result)
 
     @patch('wagtail_unveil.helpers.snippet_helpers.get_modelviewset_models')
     @patch('wagtail_unveil.helpers.snippet_helpers.model_has_instances')
@@ -361,12 +369,13 @@ class GetModelViewsetUrlsTests(TestCase):
         )
         
         # Check that we get the expected URLs with the custom path
-        self.assertEqual(len(result), 2)  # 1 list URL + 1 edit URL
+        self.assertEqual(len(result), 3)  # 1 list URL + 1 edit URL + 1 delete URL
         
         # The actual implementation doesn't use custom paths
         # It always constructs URLs based on model name
         self.assertIn(("app1.model1", "list", "http://testserver/admin/model1/"), result)
         self.assertIn(("app1.model1 (Instance 1)", "edit", "http://testserver/admin/model1/1/"), result)
+        self.assertIn(("app1.model1 (Instance 1)", "delete", "http://testserver/admin/model1/1/delete/"), result)
 
     @patch('wagtail_unveil.helpers.snippet_helpers.get_modelviewset_models')
     def test_get_modelviewset_urls_with_skip_models(self, mock_get_modelviewset_models):

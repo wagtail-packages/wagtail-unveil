@@ -84,12 +84,21 @@ class GetPageUrlsTests(TestCase):
         result = get_page_urls(self.output, self.base_url, self.max_instances)
         
         # Check that we get the expected URLs
-        # 3 edit URLs + 3 frontend URLs + 1 listing URL for the model with no instances
-        self.assertEqual(len(result), 7)  
+        # 3 edit URLs + 3 delete URLs + 3 frontend URLs (for instances with URLs) + 1 listing URL (for model with no instances)
+        self.assertEqual(len(result), 10)
         
         # Check edit URLs for instances
         edit_urls = [r for r in result if r[1] == "edit"]
         self.assertEqual(len(edit_urls), 3)
+        
+        # Check delete URLs for instances
+        delete_urls = [r for r in result if r[1] == "delete"]
+        self.assertEqual(len(delete_urls), 3)
+        
+        # Verify delete URLs are formatted correctly
+        self.assertIn(("app1.model1 (Instance 1)", "delete", "http://testserver/admin/pages/1/delete/"), result)
+        self.assertIn(("app1.model1 (Instance 2)", "delete", "http://testserver/admin/pages/2/delete/"), result)
+        self.assertIn(("app1.model1 (Instance 3)", "delete", "http://testserver/admin/pages/3/delete/"), result)
         
         # Check frontend URLs for instances that have them
         frontend_urls = [r for r in result if r[1] == "frontend"]
@@ -150,10 +159,13 @@ class GetPageUrlsTests(TestCase):
         result = get_page_urls(self.output, base_url_with_slash, self.max_instances)
         
         # Check that we get the expected URLs without double slashes
-        self.assertEqual(len(result), 2)  # 1 edit URL + 1 frontend URL
+        self.assertEqual(len(result), 3)  # 1 edit URL + 1 delete URL + 1 frontend URL
         
         # Check edit URL doesn't have double slashes
         self.assertIn(("app1.model1 (Instance 1)", "edit", "http://testserver/admin/pages/1/edit/"), result)
+        
+        # Check delete URL doesn't have double slashes
+        self.assertIn(("app1.model1 (Instance 1)", "delete", "http://testserver/admin/pages/1/delete/"), result)
         
         # Check frontend URL doesn't have double slashes
         self.assertIn(("app1.model1 (Instance 1)", "frontend", "http://testserver/page1/"), result)
@@ -202,9 +214,10 @@ class GetSiteUrlsTests(TestCase):
         result = get_site_urls(self.output, self.base_url)
         
         # Check that we get the expected URLs
-        self.assertEqual(len(result), 9)  # Expected number of URLs
+        self.assertEqual(len(result), 11)  # Expected number of URLs
         
         # Check that we have the general admin pages listing URL
+        # Note: the format must match that used in the implementation
         self.assertIn(("All Pages Listing", "list", "http://testserver/admin/pages/"), result)
         
         # Check that we have search URLs
@@ -215,9 +228,13 @@ class GetSiteUrlsTests(TestCase):
         search_tuple = ("Page Search (With Results - 'Welcome')", "list", result_search_url)
         self.assertIn(search_tuple, result)
         
-        # Check admin URLs for root pages (including root page title)
+        # Check admin edit URLs for root pages (including root page title)
         self.assertIn(("Site default page (Root Page 1)", "edit", "http://testserver/admin/pages/1/edit/"), result)
         self.assertIn(("Site default page (Root Page 2)", "edit", "http://testserver/admin/pages/2/edit/"), result)
+        
+        # Check admin delete URLs for root pages
+        self.assertIn(("Site default page (Root Page 1)", "delete", "http://testserver/admin/pages/1/delete/"), result)
+        self.assertIn(("Site default page (Root Page 2)", "delete", "http://testserver/admin/pages/2/delete/"), result)
         
         # Check frontend URL
         self.assertIn(("Site default page", "frontend", "http://testserver/"), result)

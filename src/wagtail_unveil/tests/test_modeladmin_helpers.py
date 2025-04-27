@@ -296,7 +296,7 @@ class GetModeladminUrlsTests(TestCase):
         )
         
         # Check the results
-        self.assertEqual(len(result), 3)  # 1 list + 2 edit URLs
+        self.assertEqual(len(result), 5)  # 1 list + 2 edit URLs + 2 delete URLs
         
         # Check that the list URL was added with the correct format
         mock_format_url_tuple.assert_any_call(
@@ -312,6 +312,16 @@ class GetModeladminUrlsTests(TestCase):
         mock_format_url_tuple.assert_any_call(
             "testapp.testmodel", "Truncated Instance 2", "edit", 
             "http://testserver/admin/modeladmin/testapp/testmodel/edit/2/"
+        )
+        
+        # Check that delete URLs were added with the correct format
+        mock_format_url_tuple.assert_any_call(
+            "testapp.testmodel", "Truncated Instance 1", "delete", 
+            "http://testserver/admin/modeladmin/testapp/testmodel/delete/1/"
+        )
+        mock_format_url_tuple.assert_any_call(
+            "testapp.testmodel", "Truncated Instance 2", "delete", 
+            "http://testserver/admin/modeladmin/testapp/testmodel/delete/2/"
         )
 
     @patch('wagtail_unveil.helpers.modeladmin_helpers.get_modeladmin_models')
@@ -363,7 +373,7 @@ class GetModeladminUrlsTests(TestCase):
                 )
         
         # Check the results
-        self.assertEqual(len(result), 3)  # 1 list + 2 edit URLs
+        self.assertEqual(len(result), 5)  # 1 list + 2 edit URLs + 2 delete URLs
         
         # Check that the list URL was added with the correct format
         mock_format_url_tuple.assert_any_call(
@@ -379,6 +389,16 @@ class GetModeladminUrlsTests(TestCase):
         mock_format_url_tuple.assert_any_call(
             "testapp.testmodel", "Truncated Instance 2", "edit", 
             "http://testserver/admin/custom/path/edit/2/"
+        )
+        
+        # Check that delete URLs were added with the correct format
+        mock_format_url_tuple.assert_any_call(
+            "testapp.testmodel", "Truncated Instance 1", "delete", 
+            "http://testserver/admin/custom/path/delete/1/"
+        )
+        mock_format_url_tuple.assert_any_call(
+            "testapp.testmodel", "Truncated Instance 2", "delete", 
+            "http://testserver/admin/custom/path/delete/2/"
         )
 
     @patch('wagtail_unveil.helpers.modeladmin_helpers.get_modeladmin_models')
