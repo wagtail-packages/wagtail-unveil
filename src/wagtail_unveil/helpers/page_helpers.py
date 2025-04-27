@@ -40,6 +40,12 @@ def get_page_urls(output, base_url, max_instances):
                     format_url_tuple(model_name, instance.title, "edit", edit_url)
                 )
 
+                # Add delete URL for each page
+                delete_url = f"{base}/admin/pages/{instance.id}/delete/"
+                urls.append(
+                    format_url_tuple(model_name, instance.title, "delete", delete_url)
+                )
+
                 # Add frontend URL if the page has one
                 if hasattr(instance, "url") and instance.url:
                     # Check if already a full URL
@@ -148,6 +154,14 @@ def get_site_urls(output, base_url):
             urls.append(
                 format_url_tuple(
                     "Site default page", root_page.title, "edit", admin_url
+                )
+            )
+            
+            # Add delete URL for the root page
+            delete_url = f"{base}/admin/pages/{root_page.id}/delete/"
+            urls.append(
+                format_url_tuple(
+                    "Site default page", root_page.title, "delete", delete_url
                 )
             )
 

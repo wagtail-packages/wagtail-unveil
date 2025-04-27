@@ -39,6 +39,12 @@ def get_snippet_urls(output, base_url, max_instances):
                 urls.append(
                     format_url_tuple(model_name, instance_name, "edit", edit_url)
                 )
+                
+                # Add delete URL for each instance
+                delete_url = f"{base_url}/admin/snippets/{content_type.app_label}/{content_type.model}/{instance.id}/delete/"
+                urls.append(
+                    format_url_tuple(model_name, instance_name, "delete", delete_url)
+                )
         else:
             # For models with no instances, always show the list URL with a note
             if hasattr(output, "style"):
@@ -122,6 +128,12 @@ def get_modelviewset_urls(
                     urls.append(
                         format_url_tuple(model_name, instance_name, "edit", edit_url)
                     )
+                    
+                    # Add delete URL with correct plural form
+                    delete_url = f"{base}/admin/locales/{instance.id}/delete/"
+                    urls.append(
+                        format_url_tuple(model_name, instance_name, "delete", delete_url)
+                    )
             else:
                 # For models with no instances, always show the list URL with a note
                 if hasattr(output, "style"):
@@ -155,6 +167,12 @@ def get_modelviewset_urls(
                 edit_url = f"{base}/admin/{model._meta.model_name}/{instance.id}/"
                 urls.append(
                     format_url_tuple(model_name, instance_name, "edit", edit_url)
+                )
+                
+                # Add delete URL for each instance
+                delete_url = f"{base}/admin/{model._meta.model_name}/{instance.id}/delete/"
+                urls.append(
+                    format_url_tuple(model_name, instance_name, "delete", delete_url)
                 )
         else:
             # For models with no instances, always show the list URL with a note

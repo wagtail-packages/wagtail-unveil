@@ -98,6 +98,14 @@ def get_settings_admin_urls(output, base_url, max_instances=1):
                 f"Settings > Sites > {site.hostname}", None, "edit", site_edit_url
             )
         )
+        
+        # Add delete URL for site
+        site_delete_url = f"{base}/admin/sites/{site.id}/delete/"
+        urls.append(
+            format_url_tuple(
+                f"Settings > Sites > {site.hostname}", None, "delete", site_delete_url
+            )
+        )
 
     # Add other common settings sections
     settings_sections = [
@@ -125,6 +133,14 @@ def get_settings_admin_urls(output, base_url, max_instances=1):
                 f"Settings > Users > {admin_user.username}", None, "edit", user_edit_url
             )
         )
+        
+        # Add delete URL for user
+        user_delete_url = f"{base}/admin/users/{admin_user.id}/delete/"
+        urls.append(
+            format_url_tuple(
+                f"Settings > Users > {admin_user.username}", None, "delete", user_delete_url
+            )
+        )
 
     # Groups management - try to get a group for edit URL
     if apps.is_installed("django.contrib.auth"):
@@ -134,6 +150,14 @@ def get_settings_admin_urls(output, base_url, max_instances=1):
             urls.append(
                 format_url_tuple(
                     f"Settings > Groups > {group.name}", None, "edit", group_edit_url
+                )
+            )
+            
+            # Add delete URL for group
+            group_delete_url = f"{base}/admin/groups/{group.id}/delete/"
+            urls.append(
+                format_url_tuple(
+                    f"Settings > Groups > {group.name}", None, "delete", group_delete_url
                 )
             )
 
@@ -159,6 +183,17 @@ def get_settings_admin_urls(output, base_url, max_instances=1):
                 collection_edit_url,
             )
         )
+        
+        # Add delete URL for collection
+        collection_delete_url = f"{base}/admin/collections/{collection.id}/delete/"
+        urls.append(
+            format_url_tuple(
+                f"Settings > Collections > {collection.name}",
+                None,
+                "delete",
+                collection_delete_url,
+            )
+        )
 
     # Redirects - try to get a redirect for edit URL
     if apps.is_installed("wagtail.contrib.redirects"):
@@ -177,6 +212,17 @@ def get_settings_admin_urls(output, base_url, max_instances=1):
                     None,
                     "edit",
                     redirect_edit_url,
+                )
+            )
+            
+            # Add delete URL for redirect
+            redirect_delete_url = f"{base}/admin/redirects/{redirect.id}/delete/"
+            urls.append(
+                format_url_tuple(
+                    f"Settings > Redirects > {redirect.old_path}",
+                    None,
+                    "delete",
+                    redirect_delete_url,
                 )
             )
 
@@ -199,6 +245,17 @@ def get_settings_admin_urls(output, base_url, max_instances=1):
                     workflow_edit_url,
                 )
             )
+            
+            # Use correct URL pattern for workflow disable/delete operation
+            workflow_delete_url = f"{base}/admin/workflows/disable/{workflow.id}/"
+            urls.append(
+                format_url_tuple(
+                    f"Settings > Workflows > {workflow.name}",
+                    None,
+                    "delete",
+                    workflow_delete_url,
+                )
+            )
 
     # Workflow tasks - try to get a workflow task for edit URL if the module exists
     if hasattr(wagtail.models, "Task"):
@@ -217,6 +274,17 @@ def get_settings_admin_urls(output, base_url, max_instances=1):
                     None,
                     "edit",
                     task_edit_url,
+                )
+            )
+            
+            # Use correct URL pattern for task disable/delete operation, similar to workflows
+            task_delete_url = f"{base}/admin/workflows/tasks/disable/{task.id}/"
+            urls.append(
+                format_url_tuple(
+                    f"Settings > Workflow tasks > {task.name}",
+                    None,
+                    "delete",
+                    task_delete_url,
                 )
             )
 
@@ -243,6 +311,17 @@ def get_settings_admin_urls(output, base_url, max_instances=1):
                             None,
                             "edit",
                             locale_edit_url,
+                        )
+                    )
+                    
+                    # Add delete URL for locale
+                    locale_delete_url = f"{base}/admin/locales/delete/{locale.id}/"
+                    urls.append(
+                        format_url_tuple(
+                            f"Settings > Locales > {locale.language_code}",
+                            None,
+                            "delete",
+                            locale_delete_url,
                         )
                     )
             else:
@@ -294,6 +373,17 @@ def get_settings_admin_urls(output, base_url, max_instances=1):
                         None,
                         "edit",
                         promotion_edit_url,
+                    )
+                )
+                
+                # Add delete URL for search promotion
+                promotion_delete_url = f"{base}/admin/searchpicks/{promotion.id}/delete/"
+                urls.append(
+                    format_url_tuple(
+                        f"Settings > Search promotions > {promo_name}",
+                        None,
+                        "delete",
+                        promotion_delete_url,
                     )
                 )
         else:

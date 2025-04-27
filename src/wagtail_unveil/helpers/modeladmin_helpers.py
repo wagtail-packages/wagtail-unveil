@@ -95,15 +95,23 @@ def get_modeladmin_urls(
                 if custom_url_path:
                     # Use the custom URL path for edit URLs
                     edit_url = f"{base}/admin/{custom_url_path}/edit/{instance.id}/"
+                    # Add delete URL with custom path
+                    delete_url = f"{base}/admin/{custom_url_path}/delete/{instance.id}/"
                 else:
                     # Use the default modeladmin URL pattern for edit URLs
                     # TODO: depending on how the model is registered, this might not be correct
                     # Other testing suggest using
                     # edit_url = f"{base}/admin/{model._meta.app_label}/{model._meta.model_name}/edit/{instance.id}/"
                     edit_url = f"{base}/admin/modeladmin/{model._meta.app_label}/{model._meta.model_name}/edit/{instance.id}/"
+                    # Add delete URL with default pattern
+                    delete_url = f"{base}/admin/modeladmin/{model._meta.app_label}/{model._meta.model_name}/delete/{instance.id}/"
 
                 urls.append(
                     format_url_tuple(model_name, instance_name, "edit", edit_url)
+                )
+                # Add delete URL for each instance
+                urls.append(
+                    format_url_tuple(model_name, instance_name, "delete", delete_url)
                 )
         else:
             # For models with no instances, always show the list URL with a note
