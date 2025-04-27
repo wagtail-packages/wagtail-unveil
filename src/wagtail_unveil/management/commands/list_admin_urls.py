@@ -270,7 +270,8 @@ class Command(BaseCommand):
             admin_urls = [url for url in backend_urls if url[1] == "admin"]
             edit_urls = [url for url in backend_urls if url[1] == "edit"]
             list_urls = [url for url in backend_urls if url[1] == "list"]
-            other_urls = [url for url in backend_urls if url[1] not in ["admin", "edit", "list"]]
+            delete_urls = [url for url in backend_urls if url[1] == "delete"]
+            other_urls = [url for url in backend_urls if url[1] not in ["admin", "edit", "list", "delete"]]
 
             if admin_urls:
                 self.stdout.write("\n" + "-" * 25 + " ADMIN " + "-" * 25)
@@ -303,6 +304,20 @@ class Command(BaseCommand):
             if edit_urls:
                 self.stdout.write("\n" + "-" * 25 + " EDIT " + "-" * 25)
                 for url_data in edit_urls:
+                    if check_urls:
+                        model_name, url_type, url, status = url_data
+                        if status == "OK":
+                            status_str = self.style.SUCCESS(f"[{status}]")
+                        else:
+                            status_str = self.style.ERROR(f"[{status}]")
+                        self.stdout.write(f"{model_name}: {url} {status_str}")
+                    else:
+                        model_name, url_type, url = url_data
+                        self.stdout.write(f"{model_name}: {url}")
+
+            if delete_urls:
+                self.stdout.write("\n" + "-" * 25 + " DELETE " + "-" * 25)
+                for url_data in delete_urls:
                     if check_urls:
                         model_name, url_type, url, status = url_data
                         if status == "OK":
@@ -350,7 +365,8 @@ class Command(BaseCommand):
                 admin_urls = [url for url in backend_urls if url[1] == "admin"]
                 edit_urls = [url for url in backend_urls if url[1] == "edit"]
                 list_urls = [url for url in backend_urls if url[1] == "list"]
-                other_urls = [url for url in backend_urls if url[1] not in ["admin", "edit", "list"]]
+                delete_urls = [url for url in backend_urls if url[1] == "delete"]
+                other_urls = [url for url in backend_urls if url[1] not in ["admin", "edit", "list", "delete"]]
 
                 if admin_urls:
                     f.write("\n" + "-" * 25 + " ADMIN " + "-" * 25 + "\n")
@@ -377,6 +393,17 @@ class Command(BaseCommand):
                 if edit_urls:
                     f.write("\n" + "-" * 25 + " EDIT " + "-" * 25 + "\n")
                     for url_data in edit_urls:
+                        if check_urls:
+                            model_name, url_type, url, status = url_data
+                            status_str = f"[{status}]" if status else ""
+                            f.write(f"{model_name}: {url} {status_str}\n")
+                        else:
+                            model_name, url_type, url = url_data
+                            f.write(f"{model_name}: {url}\n")
+
+                if delete_urls:
+                    f.write("\n" + "-" * 25 + " DELETE " + "-" * 25 + "\n")
+                    for url_data in delete_urls:
                         if check_urls:
                             model_name, url_type, url, status = url_data
                             status_str = f"[{status}]" if status else ""

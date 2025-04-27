@@ -47,6 +47,12 @@ def get_image_admin_urls(output, base_url, max_instances):
             instance_name = truncate_instance_name(str(instance))
             edit_url = f"{base}/admin/images/{instance.id}/"
             urls.append(format_url_tuple(model_name, instance_name, "edit", edit_url))
+            
+            # Add delete URL for each image
+            # In Wagtail, the delete URL format differs from documents
+            # It's likely /admin/images/{id}/delete/ instead of /admin/images/delete/{id}/
+            delete_url = f"{base}/admin/images/{instance.id}/delete/"
+            urls.append(format_url_tuple(model_name, instance_name, "delete", delete_url))
     else:
         # For models with no instances, always show the list URL with a note
         if hasattr(output, "style"):
@@ -83,6 +89,10 @@ def get_document_admin_urls(output, base_url, max_instances):
             # The correct edit URL pattern for documents
             edit_url = f"{base}/admin/documents/edit/{instance.id}/"
             urls.append(format_url_tuple(model_name, instance_name, "edit", edit_url))
+            
+            # Add delete URL for each document
+            delete_url = f"{base}/admin/documents/delete/{instance.id}/"
+            urls.append(format_url_tuple(model_name, instance_name, "delete", delete_url))
     else:
         # For models with no instances, always show the list URL with a note
         if hasattr(output, "style"):
