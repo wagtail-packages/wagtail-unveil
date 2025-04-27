@@ -1,6 +1,7 @@
 from io import StringIO
 from django.http import JsonResponse
 from django.views import View
+from django.conf import settings
 
 from .helpers.page_helpers import get_page_urls
 from .helpers.snippet_helpers import get_snippet_urls, get_modelviewset_urls
@@ -17,7 +18,7 @@ class UnveilApiView(View):
         output = StringIO()
         
         # Parameters
-        max_instances = int(request.GET.get('max_instances', 1))
+        max_instances = int(request.GET.get('max_instances', getattr(settings, 'WAGTAIL_UNVEIL_MAX_INSTANCES', 1)))
         base_url = request.GET.get('base_url', "http://localhost:8000")
         group_by = request.GET.get('group_by', '').lower()
         

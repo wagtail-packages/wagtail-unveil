@@ -47,6 +47,16 @@ INSTALLED_APPS = [
 ]
 ```
 
+## Configuration
+
+You can configure the package using the following settings in your settings file:
+
+```python
+# Maximum number of instances to show per model (default: 1)
+# Set to 0 to show all instances
+WAGTAIL_UNVEIL_MAX_INSTANCES = 1
+```
+
 ## Enabling the API
 
 To enable the JSON API endpoint, add the following to your project's main urls.py file:
