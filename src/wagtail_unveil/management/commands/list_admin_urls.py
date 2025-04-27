@@ -1,6 +1,7 @@
 from django.core.management.base import BaseCommand
 from wagtail.models import Site
 from wagtail.snippets.models import get_snippet_models
+from django.conf import settings
 
 from wagtail_unveil.helpers.media_helpers import (
     get_document_admin_urls,
@@ -48,7 +49,6 @@ class Command(BaseCommand):
         parser.add_argument(
             "--max-instances",
             type=int,
-            default=1,
             help="Maximum instances to show per model (default: 1, use 0 for unlimited)",
         )
 
@@ -87,7 +87,11 @@ class Command(BaseCommand):
 
         output_type = options["output"]
         output_file = options["file"]
+        
+        # Get max_instances from command line argument first, then settings, or fall back to 1
         max_instances = options.get("max_instances")
+        if max_instances is None:
+            max_instances = getattr(settings, 'WAGTAIL_UNVEIL_MAX_INSTANCES', 1)
 
         self.stdout.write(self.style.SUCCESS("Finding all Wagtail models..."))
 

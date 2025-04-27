@@ -68,6 +68,16 @@ INSTALLED_APPS = [
 
 Run the command `uv run python manage.py list_admin_urls` to see the output of the command. It should list the bakerydemo  admin URLs.
 
+## Configuration options
+
+You can configure the package using the following settings in your settings file:
+
+```python
+# Maximum number of instances to show per model (default: 1)
+# Set to 0 to show all instances
+WAGTAIL_UNVEIL_MAX_INSTANCES = 1
+```
+
 ## Command options
 
 The command has a few flags that can be used to adjust the output. The flags are all optional:

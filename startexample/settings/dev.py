@@ -38,6 +38,9 @@ WAGTAIL_CONTENT_LANGUAGES = LANGUAGES = [
 # It's extected to see errors in the Unviel report view if this is not installed.
 INSTALLED_APPS += ["wagtail.contrib.search_promotions"]
 
+# Adding this will adjust the max instances for all output
+# WAGTAIL_UNVEIL_MAX_INSTANCES = 1 # 0 is all instances
+
 try:
     from .local import * # noqa: F403
 except ImportError:

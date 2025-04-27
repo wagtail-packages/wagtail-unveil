@@ -2,6 +2,7 @@ from wagtail.admin.views.reports import ReportView
 from collections import namedtuple
 from io import StringIO
 from wagtail.admin.widgets.button import HeaderButton
+from django.conf import settings
 
 from .helpers.page_helpers import get_page_urls
 from .helpers.snippet_helpers import get_snippet_urls, get_modelviewset_urls
@@ -66,8 +67,8 @@ class UnveilReportView(ReportView):
         counter = 1
         
         # Get URLs from different sources using helper functions
-        # Max instances set to 1 for simplicity - can be made configurable later
-        max_instances = 1
+        # Get max_instances from settings with a default of 1
+        max_instances = getattr(settings, 'WAGTAIL_UNVEIL_MAX_INSTANCES', 1)
         base_url = "http://localhost:8000"  # Default base URL
         
         # Collect page URLs
