@@ -47,16 +47,6 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     # End example apps installed by the default wagtail start command
-
-    "wagtail_unveil",
-    "wagtail_modeladmin", # Comment this out if you don't want to test the model admin
-    # Uncomment if you want to test Internationalization
-    # It's extected to see errors in the Unviel report view if this is not installed.
-    
-    "wagtail.locales",
-    # Uncomment if you want to test search promotions
-    # It's extected to see errors in the Unviel report view if this is not installed.
-    # "wagtail.contrib.search_promotions",
 ]
 
 MIDDLEWARE = [
@@ -205,15 +195,3 @@ WAGTAILDOCS_EXTENSIONS = [
     "xlsx",
     "zip",
 ]
-
-# Uncomment to Enable Internationalization
-# It's extected to see errors in the Unviel report view if this is disabled.
-# USE_I18N = True
-# WAGTAIL_I18N_ENABLED = True
-# USE_L10N = True
-
-# WAGTAIL_CONTENT_LANGUAGES = LANGUAGES = [
-#     ('en', "English"),
-#     ('fr', "French"),
-#     ('es', "Spanish"),
-# ]
