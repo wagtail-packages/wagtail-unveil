@@ -8,7 +8,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ("home", "0002_create_homepage"),
-        ("wagtailimages", "0027_image_description"),
+        ("wagtailimages", "0025_alter_image_file_alter_rendition_file"),
     ]
 
     operations = [

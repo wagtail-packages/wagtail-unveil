@@ -1,19 +1,39 @@
 [project]
 name = "wagtail-unveil"
 version = "0.1.0"
-description = "Add your description here"
+description = "A Wagtail package that helps map and expose admin and frontend URLs in your Wagtail project."
 readme = "README.md"
 authors = [
     { name = "Nick Moreton", email = "nickmoreton@me.com" }
 ]
-requires-python = ">=3.9"
-dependencies = [
-    "wagtail>=6.3",
+license = {text = "MIT"}
+
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Web Environment",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Topic :: Internet :: WWW/HTTP",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Framework :: Django",
+    "Framework :: Django :: 4.2",
+    "Framework :: Django :: 5.1",
+    "Framework :: Django :: 5.2",
+    "Framework :: Wagtail",
+    "Framework :: Wagtail :: 5",
+    "Framework :: Wagtail :: 6",
 ]
 
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires-python = ">=3.9"
+dependencies = [
+    "wagtail>=5.2",
+]
 
 [dependency-groups]
 dev = [
@@ -22,3 +42,7 @@ dev = [
     "wagtail-modeladmin>=2.1.0",
     "tox>=4.11.3",
 ]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
