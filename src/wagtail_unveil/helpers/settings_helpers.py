@@ -78,6 +78,10 @@ def get_settings_admin_urls(output, base_url, max_instances=1):
     """Get admin URLs for Wagtail settings"""
     urls = []
     base = base_url.rstrip("/")
+    
+    # Check once for installed apps/features
+    locales_app_installed = apps.is_installed("wagtail.locales")
+    search_promotions_installed = apps.is_installed("wagtail.contrib.search_promotions")
 
     # Settings section URLs are added individually - main settings entry is removed
 
@@ -103,23 +107,15 @@ def get_settings_admin_urls(output, base_url, max_instances=1):
         ("Redirects", "redirects"),
         ("Workflows", "workflows/list"),
         ("Workflow tasks","workflows/tasks/index"),
-        ("Locales","locales"),
     ]
+    
+    # Only add Locales to settings_sections if it's explicitly installed in INSTALLED_APPS
+    if locales_app_installed:
+        settings_sections.append(("Locales", "locales"))
 
     for name, path in settings_sections:
         section_url = f"{base}/admin/{path}/"
-        # Add special debug message for locales section
-        if path == "locales":
-            output.write(f"Using correct PLURAL URL for locales: {section_url}")
         urls.append(format_url_tuple(f"Settings > {name}", None, "list", section_url))
-
-    # # Users management - try to get an admin user for edit URL
-    # admins = safe_import(
-    #     output,
-    #     get_admin_user,
-    #     fallback_value=[],
-    #     error_msg="Error getting user instances",
-    # )
 
     admin_user = get_admin_user()
     if admin_user:
@@ -224,62 +220,56 @@ def get_settings_admin_urls(output, base_url, max_instances=1):
                 )
             )
 
-    # Locales - try to get locales for edit URL
-    # Try different import paths depending on Wagtail version
-    locale_found = False
-    Locale = None
-
-    for import_path in [
-        lambda: __import__("wagtail.models", fromlist=["Locale"]).Locale,
-        lambda: __import__("wagtail.locales.models", fromlist=["Locale"]).Locale,
-    ]:
-        Locale = safe_import(output, import_path, error_msg=None)
+    # Locales - only process if the app is explicitly installed in INSTALLED_APPS
+    if locales_app_installed:
+        # Use safe_import to import the Locale model
+        Locale = safe_import(
+            output,
+            lambda: __import__("wagtail.models", fromlist=["Locale"]).Locale,
+            fallback_value=None,
+            error_msg="Error importing Locale model"
+        )
+        
         if Locale:
-            locale_found = True
-            break
-
-    if locale_found:
-        # Try to get locales
-        locales = get_instance_sample(output, Locale, max_instances=max_instances)
-        if locales:
-            # Only add actual locale instances if they exist
-            for locale in locales:
-                locale_edit_url = f"{base}/admin/locales/edit/{locale.id}/"
+            # Try to get locales
+            locales = get_instance_sample(output, Locale, max_instances=max_instances)
+            if locales:
+                # Only add actual locale instances if they exist
+                for locale in locales:
+                    locale_edit_url = f"{base}/admin/locales/edit/{locale.id}/"
+                    urls.append(
+                        format_url_tuple(
+                            f"Settings > Locales > {locale.language_code}",
+                            None,
+                            "edit",
+                            locale_edit_url,
+                        )
+                    )
+            else:
+                # Add an example URL only if no instances found
+                # And add NO INSTANCES note to be consistent with other sections
+                if hasattr(output, "style"):
+                    output.write(output.style.WARNING("Note: Locale has no instances"))
+                else:
+                    output.write("Note: Locale has no instances")
+                
+                locale_edit_url = f"{base}/admin/locales/edit/1/"
                 urls.append(
                     format_url_tuple(
-                        f"Settings > Locales > {locale.language_code}",
-                        None,
-                        "edit",
-                        locale_edit_url,
+                        "Settings > Locales > Example (NO INSTANCES)", None, "edit", locale_edit_url
                     )
                 )
         else:
-            # Add an example URL only if no instances found
-            locale_edit_url = f"{base}/admin/locales/edit/1/"
-            urls.append(
-                format_url_tuple(
-                    "Settings > Locales > Example", None, "edit", locale_edit_url
-                )
-            )
-    elif "wagtail.i18n" in apps.settings.INSTALLED_APPS:
-        # Fall back to older Wagtail versions
-        locale_edit_url = f"{base}/admin/locales/edit/1/"
-        urls.append(
-            format_url_tuple(
-                "Settings > Locales > Example", None, "edit", locale_edit_url
-            )
-        )
-    else:
-        # Add example URL for documentation purposes
-        locale_edit_url = f"{base}/admin/locales/edit/1/"
-        urls.append(
-            format_url_tuple(
-                "Settings > Locales > Example", None, "edit", locale_edit_url
-            )
-        )
+            # The Locale model isn't available, even though the app might be installed
+            # Log this as an anomaly but don't add URLs
+            if hasattr(output, "style"):
+                output.write(output.style.WARNING("Note: wagtail.locales is installed but Locale model is not available"))
+            else:
+                output.write("Note: wagtail.locales is installed but Locale model is not available")
+    # No URLs added if wagtail.locales is not in INSTALLED_APPS
 
     # Search promotions - try to get a search promotion for edit URL
-    if apps.is_installed("wagtail.contrib.search_promotions"):
+    if search_promotions_installed:
         promotions = safe_import(
             output,
             get_search_promotions,
