@@ -5,6 +5,8 @@ from django.conf import settings
 import requests
 from requests.exceptions import RequestException
 import getpass
+import re
+from urllib.parse import urljoin
 
 from wagtail_unveil.helpers.media_helpers import (
     get_document_admin_urls,
@@ -209,25 +211,29 @@ class Command(BaseCommand):
         urls.extend(settings_urls)
 
         # Process URLs with checking if enabled
-        if check_urls and username and password:
+        if check_urls:
             self.stdout.write(self.style.SUCCESS("Checking URL accessibility..."))
-            checked_urls = []
             
-            for url_data in urls:
-                model_name, url_type, url = url_data
-                status = self._check_url_accessibility(url, username, password)
-                checked_urls.append((model_name, url_type, url, status))
-            
-            # Replace the original URLs with the checked ones
-            urls = checked_urls
-
+            # Establish a session for better performance and cookie handling
+            session = self._create_admin_session(base_url, username, password)
+            if session:
+                self.stdout.write(self.style.SUCCESS("Successfully authenticated with Wagtail admin"))
+                checked_urls = []
+                
+                for url_data in urls:
+                    model_name, url_type, url = url_data
+                    status = self._check_url_with_session(session, url)
+                    checked_urls.append((model_name, url_type, url, status))
+                
+                # Replace the original URLs with the checked ones
+                urls = checked_urls
+            else:
+                self.stdout.write(self.style.ERROR("Failed to authenticate with Wagtail admin"))
+                check_urls = False
+        
         # Group URLs by frontend vs backend
-        if check_urls and username and password:
-            frontend_urls = [url for url in urls if url[1] == "frontend"]
-            backend_urls = [url for url in urls if url[1] != "frontend"]
-        else:
-            frontend_urls = [url for url in urls if url[1] == "frontend"]
-            backend_urls = [url for url in urls if url[1] != "frontend"]
+        frontend_urls = [url for url in urls if url[1] == "frontend"]
+        backend_urls = [url for url in urls if url[1] != "frontend"]
 
         # Output the URLs
         if output_type == "console":
@@ -235,9 +241,12 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS("FRONTEND URLS"))
             self.stdout.write("=" * 50)
             for url_data in frontend_urls:
-                if check_urls and username and password:
+                if check_urls:
                     model_name, url_type, url, status = url_data
-                    status_str = f"[{status}]" if status else ""
+                    if status == "OK":
+                        status_str = self.style.SUCCESS(f"[{status}]")
+                    else:
+                        status_str = self.style.ERROR(f"[{status}]")
                     self.stdout.write(f"{model_name}: {url} {status_str}")
                 else:
                     model_name, url_type, url = url_data
@@ -248,24 +257,21 @@ class Command(BaseCommand):
             self.stdout.write("=" * 50)
 
             # Group backend URLs by type
-            if check_urls and username and password:
-                admin_urls = [url for url in backend_urls if url[1] == "admin"]
-                edit_urls = [url for url in backend_urls if url[1] == "edit"]
-                list_urls = [url for url in backend_urls if url[1] == "list"]
-                other_urls = [url for url in backend_urls if url[1] not in ["admin", "edit", "list"]]
-            else:
-                admin_urls = [url for url in backend_urls if url[1] == "admin"]
-                edit_urls = [url for url in backend_urls if url[1] == "edit"]
-                list_urls = [url for url in backend_urls if url[1] == "list"]
-                other_urls = [url for url in backend_urls if url[1] not in ["admin", "edit", "list"]]
+            admin_urls = [url for url in backend_urls if url[1] == "admin"]
+            edit_urls = [url for url in backend_urls if url[1] == "edit"]
+            list_urls = [url for url in backend_urls if url[1] == "list"]
+            other_urls = [url for url in backend_urls if url[1] not in ["admin", "edit", "list"]]
 
             if admin_urls:
                 self.stdout.write("\n" + "-" * 25 + " ADMIN " + "-" * 25)
                 for url_data in admin_urls:
-                    if check_urls and username and password:
+                    if check_urls:
                         model_name, url_type, url, status = url_data
-                        status_style = self.style.SUCCESS if status == "OK" else self.style.ERROR
-                        self.stdout.write(f"{model_name}: {url} {status_style('[' + status + ']')}")
+                        if status == "OK":
+                            status_str = self.style.SUCCESS(f"[{status}]")
+                        else:
+                            status_str = self.style.ERROR(f"[{status}]")
+                        self.stdout.write(f"{model_name}: {url} {status_str}")
                     else:
                         model_name, url_type, url = url_data
                         self.stdout.write(f"{model_name}: {url}")
@@ -273,9 +279,12 @@ class Command(BaseCommand):
             if list_urls:
                 self.stdout.write("\n" + "-" * 25 + " LIST " + "-" * 25)
                 for url_data in list_urls:
-                    if check_urls and username and password:
+                    if check_urls:
                         model_name, url_type, url, status = url_data
-                        status_str = f"[{status}]" if status else ""
+                        if status == "OK":
+                            status_str = self.style.SUCCESS(f"[{status}]")
+                        else:
+                            status_str = self.style.ERROR(f"[{status}]")
                         self.stdout.write(f"{model_name}: {url} {status_str}")
                     else:
                         model_name, url_type, url = url_data
@@ -284,9 +293,12 @@ class Command(BaseCommand):
             if edit_urls:
                 self.stdout.write("\n" + "-" * 25 + " EDIT " + "-" * 25)
                 for url_data in edit_urls:
-                    if check_urls and username and password:
+                    if check_urls:
                         model_name, url_type, url, status = url_data
-                        status_str = f"[{status}]" if status else ""
+                        if status == "OK":
+                            status_str = self.style.SUCCESS(f"[{status}]")
+                        else:
+                            status_str = self.style.ERROR(f"[{status}]")
                         self.stdout.write(f"{model_name}: {url} {status_str}")
                     else:
                         model_name, url_type, url = url_data
@@ -295,9 +307,12 @@ class Command(BaseCommand):
             if other_urls:
                 self.stdout.write("\n" + "-" * 25 + " OTHER " + "-" * 25)
                 for url_data in other_urls:
-                    if check_urls and username and password:
+                    if check_urls:
                         model_name, url_type, url, status = url_data
-                        status_str = f"[{status}]" if status else ""
+                        if status == "OK":
+                            status_str = self.style.SUCCESS(f"[{status}]")
+                        else:
+                            status_str = self.style.ERROR(f"[{status}]")
                         self.stdout.write(f"{model_name}: {url} {status_str}")
                     else:
                         model_name, url_type, url = url_data
@@ -308,9 +323,10 @@ class Command(BaseCommand):
                 f.write("FRONTEND URLS\n")
                 f.write("=" * 50 + "\n")
                 for url_data in frontend_urls:
-                    if check_urls and username and password:
+                    if check_urls:
                         model_name, url_type, url, status = url_data
                         status_str = f"[{status}]" if status else ""
+                        # Note: Terminal colors don't work in files, but consistent format
                         f.write(f"{model_name}: {url} {status_str}\n")
                     else:
                         model_name, url_type, url = url_data
@@ -321,21 +337,15 @@ class Command(BaseCommand):
                 f.write("=" * 50 + "\n")
 
                 # Group backend URLs by type
-                if check_urls and username and password:
-                    admin_urls = [url for url in backend_urls if url[1] == "admin"]
-                    edit_urls = [url for url in backend_urls if url[1] == "edit"]
-                    list_urls = [url for url in backend_urls if url[1] == "list"]
-                    other_urls = [url for url in backend_urls if url[1] not in ["admin", "edit", "list"]]
-                else:
-                    admin_urls = [url for url in backend_urls if url[1] == "admin"]
-                    edit_urls = [url for url in backend_urls if url[1] == "edit"]
-                    list_urls = [url for url in backend_urls if url[1] == "list"]
-                    other_urls = [url for url in backend_urls if url[1] not in ["admin", "edit", "list"]]
+                admin_urls = [url for url in backend_urls if url[1] == "admin"]
+                edit_urls = [url for url in backend_urls if url[1] == "edit"]
+                list_urls = [url for url in backend_urls if url[1] == "list"]
+                other_urls = [url for url in backend_urls if url[1] not in ["admin", "edit", "list"]]
 
                 if admin_urls:
                     f.write("\n" + "-" * 25 + " ADMIN " + "-" * 25 + "\n")
                     for url_data in admin_urls:
-                        if check_urls and username and password:
+                        if check_urls:
                             model_name, url_type, url, status = url_data
                             status_str = f"[{status}]" if status else ""
                             f.write(f"{model_name}: {url} {status_str}\n")
@@ -346,7 +356,7 @@ class Command(BaseCommand):
                 if list_urls:
                     f.write("\n" + "-" * 25 + " LIST " + "-" * 25 + "\n")
                     for url_data in list_urls:
-                        if check_urls and username and password:
+                        if check_urls:
                             model_name, url_type, url, status = url_data
                             status_str = f"[{status}]" if status else ""
                             f.write(f"{model_name}: {url} {status_str}\n")
@@ -357,7 +367,7 @@ class Command(BaseCommand):
                 if edit_urls:
                     f.write("\n" + "-" * 25 + " EDIT " + "-" * 25 + "\n")
                     for url_data in edit_urls:
-                        if check_urls and username and password:
+                        if check_urls:
                             model_name, url_type, url, status = url_data
                             status_str = f"[{status}]" if status else ""
                             f.write(f"{model_name}: {url} {status_str}\n")
@@ -368,7 +378,7 @@ class Command(BaseCommand):
                 if other_urls:
                     f.write("\n" + "-" * 25 + " OTHER " + "-" * 25 + "\n")
                     for url_data in other_urls:
-                        if check_urls and username and password:
+                        if check_urls:
                             model_name, url_type, url, status = url_data
                             status_str = f"[{status}]" if status else ""
                             f.write(f"{model_name}: {url} {status_str}\n")
@@ -384,8 +394,88 @@ class Command(BaseCommand):
             )
         )
 
+    def _create_admin_session(self, base_url, username, password):
+        """
+        Create and return a requests session logged into the Wagtail admin.
+        Returns the session object if successful, None otherwise.
+        """
+        session = requests.Session()
+        
+        # First get the login page to extract CSRF token
+        login_url = urljoin(base_url, '/admin/login/')
+        try:
+            response = session.get(login_url, timeout=10)
+            response.raise_for_status()
+            
+            # Extract CSRF token from the login page
+            csrf_token = None
+            match = re.search(r'name="csrfmiddlewaretoken" value="([^"]+)"', response.text)
+            if match:
+                csrf_token = match.group(1)
+            else:
+                self.stdout.write(self.style.ERROR("Could not find CSRF token in login page"))
+                return None
+                
+            # Now attempt to log in
+            login_data = {
+                'csrfmiddlewaretoken': csrf_token,
+                'username': username,
+                'password': password,
+                'next': '/admin/'
+            }
+            
+            response = session.post(login_url, data=login_data, headers={
+                'Referer': login_url
+            }, timeout=10)
+            
+            # Check if login was successful by looking for error messages or checking if we're still on login page
+            if '/admin/login/' in response.url or 'Please enter the correct username and password' in response.text:
+                self.stdout.write(self.style.ERROR("Login failed: Invalid credentials"))
+                return None
+            
+            # Verify access to a protected page to confirm authentication
+            verify_url = urljoin(base_url, '/admin/')
+            verify_response = session.get(verify_url, timeout=10)
+            
+            # If we get redirected back to login or get permission denied, authentication failed
+            if '/admin/login/' in verify_response.url or verify_response.status_code == 403:
+                self.stdout.write(self.style.ERROR("Login verification failed: Redirected to login page"))
+                return None
+                
+            return session
+                
+        except RequestException as e:
+            self.stdout.write(self.style.ERROR(f"Error creating admin session: {str(e)}"))
+            return None
+    
+    def _check_url_with_session(self, session, url):
+        """Check if a URL is accessible using the established session."""
+        try:
+            response = session.get(url, timeout=10, allow_redirects=True)
+            
+            # Consider redirects that end with a 200 as success
+            if response.status_code == 200:
+                return "OK"
+            elif response.status_code in (401, 403):
+                return "AUTH FAILED"
+            elif response.status_code in (404, 410):
+                return "NOT FOUND"
+            elif response.status_code >= 500:
+                return f"SERVER ERROR ({response.status_code})"
+            else:
+                return f"ERROR ({response.status_code})"
+        except RequestException as e:
+            # Isolate the most relevant part of the error
+            error_msg = str(e)
+            if len(error_msg) > 50:  # Truncate long error messages
+                error_msg = error_msg[:47] + "..."
+            return f"ERROR ({error_msg})"
+
     def _check_url_accessibility(self, url, username, password):
-        """Check if a URL is accessible with the given credentials."""
+        """
+        Legacy method for individual URL checking without session.
+        Consider using _check_url_with_session instead.
+        """
         try:
             response = requests.get(url, auth=(username, password), timeout=10)
             if response.status_code == 200:
