@@ -219,17 +219,27 @@ class Command(BaseCommand):
             if session:
                 self.stdout.write(self.style.SUCCESS("Successfully authenticated with Wagtail admin"))
                 checked_urls = []
+                success_count = 0
+                failure_count = 0
                 
                 for url_data in urls:
                     model_name, url_type, url = url_data
                     status = self._check_url_with_session(session, url)
                     checked_urls.append((model_name, url_type, url, status))
+                    
+                    # Count successes and failures
+                    if status == "OK":
+                        success_count += 1
+                    else:
+                        failure_count += 1
                 
                 # Replace the original URLs with the checked ones
                 urls = checked_urls
             else:
                 self.stdout.write(self.style.ERROR("Failed to authenticate with Wagtail admin"))
                 check_urls = False
+                success_count = 0
+                failure_count = 0
         
         # Group URLs by frontend vs backend
         frontend_urls = [url for url in urls if url[1] == "frontend"]
@@ -385,6 +395,16 @@ class Command(BaseCommand):
                         else:
                             model_name, url_type, url = url_data
                             f.write(f"{model_name}: {url}\n")
+                
+                # Add URL check summary to the end of the file
+                if check_urls:
+                    f.write("\n" + "=" * 50 + "\n")
+                    f.write("URL CHECK SUMMARY\n")
+                    f.write("=" * 50 + "\n")
+                    f.write(f"Successful URLs: {success_count}\n")
+                    f.write(f"Failed URLs: {failure_count}\n")
+                    success_rate = (success_count / len(urls)) * 100 if urls else 0
+                    f.write(f"Success rate: {success_rate:.1f}%\n")
 
             self.stdout.write(self.style.SUCCESS(f"URLs written to {output_file}"))
 
@@ -393,6 +413,16 @@ class Command(BaseCommand):
                 f"Found {len(urls)} total URLs ({len(frontend_urls)} frontend, {len(backend_urls)} backend)"
             )
         )
+        
+        # Display summary of successful and failed URLs if check was performed
+        if check_urls:
+            self.stdout.write("\n" + "=" * 50)
+            self.stdout.write(self.style.SUCCESS("URL CHECK SUMMARY"))
+            self.stdout.write("=" * 50)
+            self.stdout.write(self.style.SUCCESS(f"Successful URLs: {success_count}"))
+            self.stdout.write(self.style.ERROR(f"Failed URLs: {failure_count}"))
+            success_rate = (success_count / len(urls)) * 100 if urls else 0
+            self.stdout.write(f"Success rate: {success_rate:.1f}%")
 
     def _create_admin_session(self, base_url, username, password):
         """
