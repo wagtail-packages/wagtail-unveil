@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     # End example apps installed by the default wagtail start command
+    # Optional apps are listed in the dev.py file
 ]
 
 MIDDLEWARE = [
