@@ -41,6 +41,10 @@ INSTALLED_APPS += ["wagtail.contrib.search_promotions"]
 # Adding this will adjust the max instances for all output
 # WAGTAIL_UNVEIL_MAX_INSTANCES = 1 # 0 is all instances
 
+# Uncomment to use the provided username and password for urls checks
+# WAGTAIL_UNVEIL_CHECK_USERNAME = "admin" # Default is None
+# WAGTAIL_UNVEIL_CHECK_PASSWORD = "admin" # Default is None
+
 try:
     from .local import * # noqa: F403
 except ImportError:

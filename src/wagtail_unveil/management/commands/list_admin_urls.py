@@ -2,6 +2,9 @@ from django.core.management.base import BaseCommand
 from wagtail.models import Site
 from wagtail.snippets.models import get_snippet_models
 from django.conf import settings
+import requests
+from requests.exceptions import RequestException
+import getpass
 
 from wagtail_unveil.helpers.media_helpers import (
     get_document_admin_urls,
@@ -51,6 +54,21 @@ class Command(BaseCommand):
             type=int,
             help="Maximum instances to show per model (default: 1, use 0 for unlimited)",
         )
+        parser.add_argument(
+            "--check",
+            action="store_true",
+            help="Check URL accessibility with the provided credentials",
+        )
+        parser.add_argument(
+            "--username",
+            type=str,
+            help="Username for authentication (can also be set with WAGTAIL_UNVEIL_CHECK_USERNAME setting)",
+        )
+        parser.add_argument(
+            "--password",
+            type=str,
+            help="Password for authentication (can also be set with WAGTAIL_UNVEIL_CHECK_PASSWORD setting)",
+        )
 
     def handle(self, *args, **options):
         # Get base URL from options or use default site
@@ -87,6 +105,30 @@ class Command(BaseCommand):
 
         output_type = options["output"]
         output_file = options["file"]
+        check_urls = options.get("check", False)
+        
+        # Get credentials from command line or settings if check is enabled
+        username = None
+        password = None
+        if check_urls:
+            username = options.get("username") or getattr(settings, "WAGTAIL_UNVEIL_CHECK_USERNAME", None)
+            password = options.get("password") or getattr(settings, "WAGTAIL_UNVEIL_CHECK_PASSWORD", None)
+            
+            # If credentials are not provided, prompt for them
+            if not username:
+                username = input("Admin username: ")
+            if not password:
+                password = getpass.getpass("Admin password: ")
+                
+            if not username or not password:
+                self.stdout.write(
+                    self.style.WARNING(
+                        "URL checking disabled: No credentials provided."
+                    )
+                )
+                check_urls = False
+            else:
+                self.stdout.write(self.style.SUCCESS(f"URL checking enabled with username: {username}"))
         
         # Get max_instances from command line argument first, then settings, or fall back to 1
         max_instances = options.get("max_instances")
@@ -166,90 +208,173 @@ class Command(BaseCommand):
         settings_urls = get_settings_admin_urls(self.stdout, base_url)
         urls.extend(settings_urls)
 
+        # Process URLs with checking if enabled
+        if check_urls and username and password:
+            self.stdout.write(self.style.SUCCESS("Checking URL accessibility..."))
+            checked_urls = []
+            
+            for url_data in urls:
+                model_name, url_type, url = url_data
+                status = self._check_url_accessibility(url, username, password)
+                checked_urls.append((model_name, url_type, url, status))
+            
+            # Replace the original URLs with the checked ones
+            urls = checked_urls
+
         # Group URLs by frontend vs backend
-        frontend_urls = [url for url in urls if url[1] == "frontend"]
-        backend_urls = [url for url in urls if url[1] != "frontend"]
+        if check_urls and username and password:
+            frontend_urls = [url for url in urls if url[1] == "frontend"]
+            backend_urls = [url for url in urls if url[1] != "frontend"]
+        else:
+            frontend_urls = [url for url in urls if url[1] == "frontend"]
+            backend_urls = [url for url in urls if url[1] != "frontend"]
 
         # Output the URLs
         if output_type == "console":
             self.stdout.write("\n" + "=" * 50)
             self.stdout.write(self.style.SUCCESS("FRONTEND URLS"))
             self.stdout.write("=" * 50)
-            for model_name, url_type, url in frontend_urls:
-                self.stdout.write(f"{model_name}: {url}")
+            for url_data in frontend_urls:
+                if check_urls and username and password:
+                    model_name, url_type, url, status = url_data
+                    status_str = f"[{status}]" if status else ""
+                    self.stdout.write(f"{model_name}: {url} {status_str}")
+                else:
+                    model_name, url_type, url = url_data
+                    self.stdout.write(f"{model_name}: {url}")
 
             self.stdout.write("\n" + "=" * 50)
             self.stdout.write(self.style.SUCCESS("BACKEND URLS"))
             self.stdout.write("=" * 50)
 
             # Group backend URLs by type
-            admin_urls = [url for url in backend_urls if url[1] == "admin"]
-            edit_urls = [url for url in backend_urls if url[1] == "edit"]
-            list_urls = [url for url in backend_urls if url[1] == "list"]
-            other_urls = [
-                url for url in backend_urls if url[1] not in ["admin", "edit", "list"]
-            ]
+            if check_urls and username and password:
+                admin_urls = [url for url in backend_urls if url[1] == "admin"]
+                edit_urls = [url for url in backend_urls if url[1] == "edit"]
+                list_urls = [url for url in backend_urls if url[1] == "list"]
+                other_urls = [url for url in backend_urls if url[1] not in ["admin", "edit", "list"]]
+            else:
+                admin_urls = [url for url in backend_urls if url[1] == "admin"]
+                edit_urls = [url for url in backend_urls if url[1] == "edit"]
+                list_urls = [url for url in backend_urls if url[1] == "list"]
+                other_urls = [url for url in backend_urls if url[1] not in ["admin", "edit", "list"]]
 
             if admin_urls:
                 self.stdout.write("\n" + "-" * 25 + " ADMIN " + "-" * 25)
-                for model_name, url_type, url in admin_urls:
-                    self.stdout.write(f"{model_name}: {url}")
+                for url_data in admin_urls:
+                    if check_urls and username and password:
+                        model_name, url_type, url, status = url_data
+                        status_style = self.style.SUCCESS if status == "OK" else self.style.ERROR
+                        self.stdout.write(f"{model_name}: {url} {status_style('[' + status + ']')}")
+                    else:
+                        model_name, url_type, url = url_data
+                        self.stdout.write(f"{model_name}: {url}")
 
             if list_urls:
                 self.stdout.write("\n" + "-" * 25 + " LIST " + "-" * 25)
-                for model_name, url_type, url in list_urls:
-                    self.stdout.write(f"{model_name}: {url}")
+                for url_data in list_urls:
+                    if check_urls and username and password:
+                        model_name, url_type, url, status = url_data
+                        status_str = f"[{status}]" if status else ""
+                        self.stdout.write(f"{model_name}: {url} {status_str}")
+                    else:
+                        model_name, url_type, url = url_data
+                        self.stdout.write(f"{model_name}: {url}")
 
             if edit_urls:
                 self.stdout.write("\n" + "-" * 25 + " EDIT " + "-" * 25)
-                for model_name, url_type, url in edit_urls:
-                    self.stdout.write(f"{model_name}: {url}")
+                for url_data in edit_urls:
+                    if check_urls and username and password:
+                        model_name, url_type, url, status = url_data
+                        status_str = f"[{status}]" if status else ""
+                        self.stdout.write(f"{model_name}: {url} {status_str}")
+                    else:
+                        model_name, url_type, url = url_data
+                        self.stdout.write(f"{model_name}: {url}")
 
             if other_urls:
                 self.stdout.write("\n" + "-" * 25 + " OTHER " + "-" * 25)
-                for model_name, url_type, url in other_urls:
-                    self.stdout.write(f"{model_name} [{url_type}]: {url}")
+                for url_data in other_urls:
+                    if check_urls and username and password:
+                        model_name, url_type, url, status = url_data
+                        status_str = f"[{status}]" if status else ""
+                        self.stdout.write(f"{model_name}: {url} {status_str}")
+                    else:
+                        model_name, url_type, url = url_data
+                        self.stdout.write(f"{model_name}: {url}")
         else:
             with open(output_file, "w") as f:
                 f.write("=" * 50 + "\n")
                 f.write("FRONTEND URLS\n")
                 f.write("=" * 50 + "\n")
-                for model_name, url_type, url in frontend_urls:
-                    f.write(f"{model_name}: {url}\n")
+                for url_data in frontend_urls:
+                    if check_urls and username and password:
+                        model_name, url_type, url, status = url_data
+                        status_str = f"[{status}]" if status else ""
+                        f.write(f"{model_name}: {url} {status_str}\n")
+                    else:
+                        model_name, url_type, url = url_data
+                        f.write(f"{model_name}: {url}\n")
 
                 f.write("\n" + "=" * 50 + "\n")
                 f.write("BACKEND URLS\n")
                 f.write("=" * 50 + "\n")
 
                 # Group backend URLs by type
-                admin_urls = [url for url in backend_urls if url[1] == "admin"]
-                edit_urls = [url for url in backend_urls if url[1] == "edit"]
-                list_urls = [url for url in backend_urls if url[1] == "list"]
-                other_urls = [
-                    url
-                    for url in backend_urls
-                    if url[1] not in ["admin", "edit", "list"]
-                ]
+                if check_urls and username and password:
+                    admin_urls = [url for url in backend_urls if url[1] == "admin"]
+                    edit_urls = [url for url in backend_urls if url[1] == "edit"]
+                    list_urls = [url for url in backend_urls if url[1] == "list"]
+                    other_urls = [url for url in backend_urls if url[1] not in ["admin", "edit", "list"]]
+                else:
+                    admin_urls = [url for url in backend_urls if url[1] == "admin"]
+                    edit_urls = [url for url in backend_urls if url[1] == "edit"]
+                    list_urls = [url for url in backend_urls if url[1] == "list"]
+                    other_urls = [url for url in backend_urls if url[1] not in ["admin", "edit", "list"]]
 
                 if admin_urls:
                     f.write("\n" + "-" * 25 + " ADMIN " + "-" * 25 + "\n")
-                    for model_name, url_type, url in admin_urls:
-                        f.write(f"{model_name}: {url}\n")
+                    for url_data in admin_urls:
+                        if check_urls and username and password:
+                            model_name, url_type, url, status = url_data
+                            status_str = f"[{status}]" if status else ""
+                            f.write(f"{model_name}: {url} {status_str}\n")
+                        else:
+                            model_name, url_type, url = url_data
+                            f.write(f"{model_name}: {url}\n")
 
                 if list_urls:
                     f.write("\n" + "-" * 25 + " LIST " + "-" * 25 + "\n")
-                    for model_name, url_type, url in list_urls:
-                        f.write(f"{model_name}: {url}\n")
+                    for url_data in list_urls:
+                        if check_urls and username and password:
+                            model_name, url_type, url, status = url_data
+                            status_str = f"[{status}]" if status else ""
+                            f.write(f"{model_name}: {url} {status_str}\n")
+                        else:
+                            model_name, url_type, url = url_data
+                            f.write(f"{model_name}: {url}\n")
 
                 if edit_urls:
                     f.write("\n" + "-" * 25 + " EDIT " + "-" * 25 + "\n")
-                    for model_name, url_type, url in edit_urls:
-                        f.write(f"{model_name}: {url}\n")
+                    for url_data in edit_urls:
+                        if check_urls and username and password:
+                            model_name, url_type, url, status = url_data
+                            status_str = f"[{status}]" if status else ""
+                            f.write(f"{model_name}: {url} {status_str}\n")
+                        else:
+                            model_name, url_type, url = url_data
+                            f.write(f"{model_name}: {url}\n")
 
                 if other_urls:
                     f.write("\n" + "-" * 25 + " OTHER " + "-" * 25 + "\n")
-                    for model_name, url_type, url in other_urls:
-                        f.write(f"{model_name} [{url_type}]: {url}\n")
+                    for url_data in other_urls:
+                        if check_urls and username and password:
+                            model_name, url_type, url, status = url_data
+                            status_str = f"[{status}]" if status else ""
+                            f.write(f"{model_name}: {url} {status_str}\n")
+                        else:
+                            model_name, url_type, url = url_data
+                            f.write(f"{model_name}: {url}\n")
 
             self.stdout.write(self.style.SUCCESS(f"URLs written to {output_file}"))
 
@@ -258,3 +383,16 @@ class Command(BaseCommand):
                 f"Found {len(urls)} total URLs ({len(frontend_urls)} frontend, {len(backend_urls)} backend)"
             )
         )
+
+    def _check_url_accessibility(self, url, username, password):
+        """Check if a URL is accessible with the given credentials."""
+        try:
+            response = requests.get(url, auth=(username, password), timeout=10)
+            if response.status_code == 200:
+                return "OK"
+            elif response.status_code == 401 or response.status_code == 403:
+                return "AUTH FAILED"
+            else:
+                return f"ERROR ({response.status_code})"
+        except RequestException as e:
+            return f"ERROR ({str(e)})"
