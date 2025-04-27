@@ -104,7 +104,6 @@ def get_settings_admin_urls(output, base_url, max_instances=1):
         ("Workflows", "workflows/list"),
         ("Workflow tasks","workflows/tasks/index"),
         ("Locales","locales"),
-        ("Search promotions", "searchpicks"),
     ]
 
     for name, path in settings_sections:
@@ -286,38 +285,47 @@ def get_settings_admin_urls(output, base_url, max_instances=1):
             error_msg="Error getting search promotion instances",
         )
 
-        for promotion in promotions:
-            promotion_edit_url = f"{base}/admin/searchpicks/{promotion.id}/"
-            # Use the query_string as the identifier
-            promo_name = getattr(promotion, "query_string", "Example")
-            urls.append(
-                format_url_tuple(
-                    f"Settings > Search promotions > {promo_name}",
-                    None,
-                    "edit",
-                    promotion_edit_url,
+        # Add search promotions list URL
+        search_promotions_url = f"{base}/admin/searchpicks/"
+        
+        # Add edit URLs only if we have instances
+        if promotions:
+            urls.append(format_url_tuple("Settings > Search promotions", None, "list", search_promotions_url))
+            
+            for promotion in promotions:
+                promotion_edit_url = f"{base}/admin/searchpicks/{promotion.id}/"
+                # Use the query_string as the identifier
+                promo_name = getattr(promotion, "query_string", "Example")
+                urls.append(
+                    format_url_tuple(
+                        f"Settings > Search promotions > {promo_name}",
+                        None,
+                        "edit",
+                        promotion_edit_url,
+                    )
                 )
-            )
         else:
-            # Add an example URL if no instances found
-            promotion_edit_url = f"{base}/admin/searchpicks/1/"
+            # For models with no instances, show the list URL with a note
+            if hasattr(output, "style"):
+                output.write(output.style.WARNING("Note: SearchPromotion has no instances"))
+            else:
+                output.write("Note: SearchPromotion has no instances")
+                
+            # Add the list URL with NO INSTANCES note
             urls.append(
                 format_url_tuple(
-                    "Settings > Search promotions > Example",
-                    None,
-                    "edit",
-                    promotion_edit_url,
+                    "Settings > Search promotions (NO INSTANCES)", 
+                    None, 
+                    "list", 
+                    search_promotions_url
                 )
             )
     else:
-        # Add an example URL even when module not installed
-        promotion_edit_url = f"{base}/admin/searchpicks/1/"
+        # Add search promotions list URL when module not installed (for documentation)
+        search_promotions_url = f"{base}/admin/searchpicks/"
         urls.append(
             format_url_tuple(
-                "Settings > Search promotions > Example",
-                None,
-                "edit",
-                promotion_edit_url,
+                "Settings > Search promotions", None, "list", search_promotions_url
             )
         )
 
