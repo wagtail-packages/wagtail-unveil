@@ -7,8 +7,8 @@ from unittest.mock import Mock, patch
 from wagtail_unveil.helpers.page_helpers import (
     get_page_models,
     get_page_urls,
-    get_site_urls,
 )
+from wagtail_unveil.helpers.site_helpers import get_site_urls
 
 
 class GetPageModelsTests(TestCase):
@@ -181,8 +181,8 @@ class GetSiteUrlsTests(TestCase):
         
         self.base_url = "http://testserver"
 
-    @patch('wagtail_unveil.helpers.page_helpers.Site')
-    @patch('wagtail_unveil.helpers.page_helpers.Page')
+    @patch('wagtail_unveil.helpers.site_helpers.Site')
+    @patch('wagtail_unveil.helpers.site_helpers.Page')
     def test_get_site_urls_with_sites(self, mock_page, mock_site):
         """Test get_site_urls with sites configured."""
         # Create mock sites and root pages
@@ -246,7 +246,7 @@ class GetSiteUrlsTests(TestCase):
         # Check that we have the admin dashboard URL for the default site
         self.assertIn(("Admin dashboard", "admin", "http://testserver/admin/"), result)
 
-    @patch('wagtail_unveil.helpers.page_helpers.Site')
+    @patch('wagtail_unveil.helpers.site_helpers.Site')
     def test_get_site_urls_with_database_error(self, mock_site):
         """Test get_site_urls with a database error."""
         # Set up the mock to raise a database error
@@ -263,8 +263,8 @@ class GetSiteUrlsTests(TestCase):
         error_msg = self.output.write.call_args[0][0]
         self.assertIn("Error getting site URLs", error_msg)
 
-    @patch('wagtail_unveil.helpers.page_helpers.Site')
-    @patch('wagtail_unveil.helpers.page_helpers.Page')
+    @patch('wagtail_unveil.helpers.site_helpers.Site')
+    @patch('wagtail_unveil.helpers.site_helpers.Page')
     def test_get_site_urls_with_no_home_page(self, mock_page, mock_site):
         """Test get_site_urls with no home page available for the search example."""
         # Create mock site and root page

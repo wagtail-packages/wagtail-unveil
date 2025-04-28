@@ -17,8 +17,8 @@ from wagtail_unveil.helpers.modeladmin_helpers import (
 from wagtail_unveil.helpers.page_helpers import (
     get_page_models,
     get_page_urls,
-    get_site_urls,
 )
+from wagtail_unveil.helpers.site_helpers import get_site_urls
 from wagtail_unveil.helpers.settings_helpers import get_settings_admin_urls
 from wagtail_unveil.helpers.snippet_helpers import (
     get_modelviewset_models,
