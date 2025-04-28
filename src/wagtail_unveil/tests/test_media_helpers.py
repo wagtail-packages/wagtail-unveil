@@ -5,10 +5,12 @@ from unittest.mock import Mock, patch
 from wagtail.documents.models import Document
 from wagtail.images.models import Image
 
-from wagtail_unveil.helpers.media_helpers import (
+from wagtail_unveil.helpers.image_helpers import (
     get_image_model,
-    get_document_model,
     get_image_admin_urls,
+)
+from wagtail_unveil.helpers.media_helpers import (
+    get_document_model,
     get_document_admin_urls,
 )
 
@@ -16,13 +18,13 @@ from wagtail_unveil.helpers.media_helpers import (
 class GetImageModelTests(TestCase):
     """Tests for the get_image_model function."""
 
-    @patch('wagtail_unveil.helpers.media_helpers.get_image_model_wagtail')
+    @patch('wagtail_unveil.helpers.image_helpers.get_image_model_wagtail')
     def test_default_image_model(self, mock_get_image_model_wagtail):
         """Test get_image_model returns the default Image model when no custom model is configured."""
         mock_get_image_model_wagtail.return_value = Image
         self.assertEqual(get_image_model(), Image)
 
-    @patch('wagtail_unveil.helpers.media_helpers.get_image_model_wagtail')
+    @patch('wagtail_unveil.helpers.image_helpers.get_image_model_wagtail')
     def test_custom_image_model(self, mock_get_image_model_wagtail):
         """Test get_image_model returns the custom image model when one is configured."""
         mock_custom_model = Mock()
@@ -34,7 +36,7 @@ class GetImageModelTests(TestCase):
         # Check the result
         self.assertEqual(result, mock_custom_model)
 
-    @patch('wagtail_unveil.helpers.media_helpers.get_image_model_wagtail')
+    @patch('wagtail_unveil.helpers.image_helpers.get_image_model_wagtail')
     def test_invalid_image_model_lookup_error(self, mock_get_image_model_wagtail):
         """Test get_image_model returns the default model when an invalid model is configured (LookupError)."""
         # Set up the mock to return Image (this would happen if there was an error in Wagtail)
@@ -46,7 +48,7 @@ class GetImageModelTests(TestCase):
         # Check the result
         self.assertEqual(result, Image)
 
-    @patch('wagtail_unveil.helpers.media_helpers.get_image_model_wagtail')
+    @patch('wagtail_unveil.helpers.image_helpers.get_image_model_wagtail')
     def test_invalid_image_model_value_error(self, mock_get_image_model_wagtail):
         """Test get_image_model returns the default model when an invalid model is configured (ValueError)."""
         # Set up the mock to return Image (this would happen if there was an error in Wagtail)
@@ -72,11 +74,11 @@ class GetImageAdminUrlsTests(TestCase):
         self.mock_image_model._meta.app_label = "wagtailimages"
         self.mock_image_model._meta.model_name = "image"
 
-    @patch('wagtail_unveil.helpers.media_helpers.get_image_model')
-    @patch('wagtail_unveil.helpers.media_helpers.model_has_instances')
-    @patch('wagtail_unveil.helpers.media_helpers.get_instance_sample')
-    @patch('wagtail_unveil.helpers.media_helpers.truncate_instance_name')
-    @patch('wagtail_unveil.helpers.media_helpers.format_url_tuple')
+    @patch('wagtail_unveil.helpers.image_helpers.get_image_model')
+    @patch('wagtail_unveil.helpers.image_helpers.model_has_instances')
+    @patch('wagtail_unveil.helpers.image_helpers.get_instance_sample')
+    @patch('wagtail_unveil.helpers.image_helpers.truncate_instance_name')
+    @patch('wagtail_unveil.helpers.image_helpers.format_url_tuple')
     def test_with_instances(self, mock_format_url_tuple, mock_truncate_instance_name, 
                             mock_get_instance_sample, mock_model_has_instances, mock_get_image_model):
         """Test get_image_admin_urls when there are instances."""
@@ -115,9 +117,9 @@ class GetImageAdminUrlsTests(TestCase):
         mock_format_url_tuple.assert_any_call("wagtailimages.image", "Truncated Image 1", "delete", "http://testserver/admin/images/1/delete/")
         mock_format_url_tuple.assert_any_call("wagtailimages.image", "Truncated Image 2", "delete", "http://testserver/admin/images/2/delete/")
 
-    @patch('wagtail_unveil.helpers.media_helpers.get_image_model')
-    @patch('wagtail_unveil.helpers.media_helpers.model_has_instances')
-    @patch('wagtail_unveil.helpers.media_helpers.format_url_tuple')
+    @patch('wagtail_unveil.helpers.image_helpers.get_image_model')
+    @patch('wagtail_unveil.helpers.image_helpers.model_has_instances')
+    @patch('wagtail_unveil.helpers.image_helpers.format_url_tuple')
     def test_without_instances(self, mock_format_url_tuple, mock_model_has_instances, mock_get_image_model):
         """Test get_image_admin_urls when there are no instances."""
         # Set up mocks
@@ -140,8 +142,8 @@ class GetImageAdminUrlsTests(TestCase):
             "wagtailimages.image (NO INSTANCES)", None, "list", "http://testserver/admin/images/"
         )
 
-    @patch('wagtail_unveil.helpers.media_helpers.get_image_model')
-    @patch('wagtail_unveil.helpers.media_helpers.model_has_instances')
+    @patch('wagtail_unveil.helpers.image_helpers.get_image_model')
+    @patch('wagtail_unveil.helpers.image_helpers.model_has_instances')
     def test_with_output_having_style(self, mock_model_has_instances, mock_get_image_model):
         """Test get_image_admin_urls when output has style method."""
         # Set up mocks
