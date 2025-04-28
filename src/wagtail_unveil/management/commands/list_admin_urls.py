@@ -8,7 +8,7 @@ import getpass
 import re
 from urllib.parse import urljoin
 
-from wagtail_unveil.helpers.image_helpers import get_image_admin_urls
+from wagtail_unveil.helpers.image_helpers import ImageHelper
 from wagtail_unveil.helpers.document_helpers import DocumentHelper
 from wagtail_unveil.helpers.modeladmin_helpers import (
     get_modeladmin_models,
@@ -197,7 +197,8 @@ class Command(BaseCommand):
 
         # Get image admin URLs
         self.stdout.write("Getting image admin URLs...")
-        image_urls = get_image_admin_urls(self.stdout, base_url, max_instances)
+        image_helper = ImageHelper(self.stdout, base_url, max_instances)
+        image_urls = image_helper.image_urls()
         urls.extend(image_urls)
 
         # Get document admin URLs

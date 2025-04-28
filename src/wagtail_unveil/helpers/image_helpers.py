@@ -1,4 +1,7 @@
-from wagtail.images import get_image_model as get_image_model_wagtail
+from dataclasses import dataclass, field
+from typing import Any, List, Optional, Tuple
+
+from wagtail.images import get_image_model
 
 from .base import (
     format_url_tuple,
@@ -8,50 +11,62 @@ from .base import (
 )
 
 
-def get_image_model():
+@dataclass
+class ImageHelper:
     """
-    This currently returns the core get_image_model function from Wagtail.
-    Not sure yet if this need to be overridden in some way.
+    A dataclass that encapsulates image helper functionality.
+    Developers can inherit from this class to extend its functionality.
     """
-    return get_image_model_wagtail()
-
-
-def get_image_admin_urls(output, base_url, max_instances):
-    """Get admin URLs for images"""
-    urls = []
-    base = base_url.rstrip("/")
-    ImageModel = get_image_model()
-    model_name = f"{ImageModel._meta.app_label}.{ImageModel._meta.model_name}"
-
-    # Check if there are any images
-    has_instances = model_has_instances(output, ImageModel)
-
-    # Add list URL
-    list_url = f"{base}/admin/images/"
-
-    if has_instances:
-        urls.append(format_url_tuple(model_name, None, "list", list_url))
-
-        # Add edit URLs for actual instances using the helper method
-        instances = get_instance_sample(output, ImageModel, max_instances)
-        for instance in instances:
-            instance_name = truncate_instance_name(str(instance))
-            edit_url = f"{base}/admin/images/{instance.id}/"
-            urls.append(format_url_tuple(model_name, instance_name, "edit", edit_url))
+    output: Any
+    base_url: str
+    max_instances: int
+    urls: List[Tuple[str, Optional[str], str, str]] = field(default_factory=list)
+    
+    def __post_init__(self):
+        self.base = self.base_url.rstrip("/")
+        self.image_model = get_image_model()
+        self.model_name = f"{self.image_model._meta.app_label}.{self.image_model._meta.model_name}"
+        self.has_instances = model_has_instances(self.output, self.image_model)
+    
+    def get_list_url(self) -> str:
+        """Get the list URL for images"""
+        return f"{self.base}/admin/images/"
+    
+    def get_edit_url(self, instance_id: int) -> str:
+        """Get the edit URL for an image instance"""
+        return f"{self.base}/admin/images/{instance_id}/"
+    
+    def get_delete_url(self, instance_id: int) -> str:
+        """Get the delete URL for an image instance"""
+        return f"{self.base}/admin/images/{instance_id}/delete/"
+    
+    def collect_urls(self) -> List[Tuple[str, Optional[str], str, str]]:
+        """Collect all image admin URLs"""
+        list_url = self.get_list_url()
+        
+        if self.has_instances:
+            self.urls.append(format_url_tuple(self.model_name, None, "list", list_url))
             
-            # Add delete URL for each image
-            # In Wagtail, the delete URL format differs from documents
-            # It's likely /admin/images/{id}/delete/ instead of /admin/images/delete/{id}/
-            delete_url = f"{base}/admin/images/{instance.id}/delete/"
-            urls.append(format_url_tuple(model_name, instance_name, "delete", delete_url))
-    else:
-        # For models with no instances, always show the list URL with a note
-        if hasattr(output, "style"):
-            output.write(output.style.INFO(f"Note: {model_name} has no instances"))
+            # Add edit and delete URLs for actual instances
+            instances = get_instance_sample(self.output, self.image_model, self.max_instances)
+            for instance in instances:
+                instance_name = truncate_instance_name(str(instance))
+                edit_url = self.get_edit_url(instance.id)
+                self.urls.append(format_url_tuple(self.model_name, instance_name, "edit", edit_url))
+                
+                delete_url = self.get_delete_url(instance.id)
+                self.urls.append(format_url_tuple(self.model_name, instance_name, "delete", delete_url))
         else:
-            output.write(f"Note: {model_name} has no instances")
-        urls.append(
-            format_url_tuple(f"{model_name} (NO INSTANCES)", None, "list", list_url)
-        )
-
-    return urls
+            # For models with no instances, show the list URL with a note
+            if hasattr(self.output, "style"):
+                self.output.write(self.output.style.INFO(f"Note: {self.model_name} has no instances"))
+            else:
+                self.output.write(f"Note: {self.model_name} has no instances")
+            self.urls.append(
+                format_url_tuple(f"{self.model_name} (NO INSTANCES)", None, "list", list_url)
+            )
+        
+        return self.urls
+    
+    def image_urls(self) -> List[Tuple[str, Optional[str], str, str]]:
+        return self.collect_urls()

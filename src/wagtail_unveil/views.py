@@ -9,7 +9,7 @@ from .helpers.snippet_helpers import get_snippet_urls
 from .helpers.modelviewset_helpers import get_modelviewset_urls
 from .helpers.modeladmin_helpers import get_modeladmin_urls
 from .helpers.settings_helpers import get_settings_admin_urls
-from .helpers.image_helpers import get_image_admin_urls
+from .helpers.image_helpers import ImageHelper
 from .helpers.document_helpers import DocumentHelper
 
 
@@ -104,7 +104,8 @@ class UnveilReportView(ReportView):
             counter += 1
         
         # Get image URLs
-        image_urls = get_image_admin_urls(output, base_url, max_instances)
+        image_helper = ImageHelper(output, base_url, max_instances)
+        image_urls = image_helper.image_urls()
         for model_name, url_type, url in image_urls:
             all_urls.append(UrlEntry(counter, model_name, url_type, url))
             counter += 1
