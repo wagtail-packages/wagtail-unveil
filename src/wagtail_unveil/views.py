@@ -8,7 +8,8 @@ from .helpers.page_helpers import get_page_urls
 from .helpers.snippet_helpers import get_snippet_urls, get_modelviewset_urls
 from .helpers.modeladmin_helpers import get_modeladmin_urls
 from .helpers.settings_helpers import get_settings_admin_urls
-from .helpers.media_helpers import get_image_admin_urls, get_document_admin_urls
+from .helpers.image_helpers import get_image_admin_urls
+from .helpers.document_helpers import get_document_admin_urls
 
 
 class UnveilReportView(ReportView):
