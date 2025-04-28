@@ -9,7 +9,7 @@ import re
 from urllib.parse import urljoin
 
 from wagtail_unveil.helpers.image_helpers import get_image_admin_urls
-from wagtail_unveil.helpers.document_helpers import get_document_admin_urls
+from wagtail_unveil.helpers.document_helpers import DocumentHelper
 from wagtail_unveil.helpers.modeladmin_helpers import (
     get_modeladmin_models,
     get_modeladmin_urls,
@@ -202,7 +202,8 @@ class Command(BaseCommand):
 
         # Get document admin URLs
         self.stdout.write("Getting document admin URLs...")
-        document_urls = get_document_admin_urls(self.stdout, base_url, max_instances)
+        document_helper = DocumentHelper(self.stdout, base_url, max_instances)
+        document_urls = document_helper.document_urls()
         urls.extend(document_urls)
 
         # Get settings admin URLs

@@ -1,4 +1,7 @@
-from wagtail.documents import get_document_model as get_document_model_wagtail
+from dataclasses import dataclass, field
+from typing import Any, List, Optional, Tuple
+
+from wagtail.documents import get_document_model
 
 from .base import (
     format_url_tuple,
@@ -8,50 +11,62 @@ from .base import (
 )
 
 
-
-def get_document_model():
+@dataclass
+class DocumentHelper:
     """
-    This currently returns the core get_document_model function from Wagtail.
-    Not sure yet if this need to be overridden in some way.
+    A dataclass that encapsulates document helper functionality.
+    Developers can inherit from this class to extend its functionality.
     """
-    return get_document_model_wagtail()
-
-
-def get_document_admin_urls(output, base_url, max_instances):
-    """Get admin URLs for documents"""
-    urls = []
-    base = base_url.rstrip("/")
-    DocumentModel = get_document_model()
-    model_name = f"{DocumentModel._meta.app_label}.{DocumentModel._meta.model_name}"
-
-    # Check if there are any documents
-    has_instances = model_has_instances(output, DocumentModel)
-
-    # Add list URL
-    list_url = f"{base}/admin/documents/"
-
-    if has_instances:
-        urls.append(format_url_tuple(model_name, None, "list", list_url))
-
-        # Add edit URLs for actual instances using the helper method
-        instances = get_instance_sample(output, DocumentModel, max_instances)
-        for instance in instances:
-            instance_name = truncate_instance_name(str(instance))
-            # The correct edit URL pattern for documents
-            edit_url = f"{base}/admin/documents/edit/{instance.id}/"
-            urls.append(format_url_tuple(model_name, instance_name, "edit", edit_url))
+    output: Any
+    base_url: str
+    max_instances: int
+    urls: List[Tuple[str, Optional[str], str, str]] = field(default_factory=list)
+    
+    def __post_init__(self):
+        self.base = self.base_url.rstrip("/")
+        self.document_model = get_document_model()
+        self.model_name = f"{self.document_model._meta.app_label}.{self.document_model._meta.model_name}"
+        self.has_instances = model_has_instances(self.output, self.document_model)
+    
+    def get_list_url(self) -> str:
+        """Get the list URL for documents"""
+        return f"{self.base}/admin/documents/"
+    
+    def get_edit_url(self, instance_id: int) -> str:
+        """Get the edit URL for a document instance"""
+        return f"{self.base}/admin/documents/edit/{instance_id}/"
+    
+    def get_delete_url(self, instance_id: int) -> str:
+        """Get the delete URL for a document instance"""
+        return f"{self.base}/admin/documents/delete/{instance_id}/"
+    
+    def collect_urls(self) -> List[Tuple[str, Optional[str], str, str]]:
+        """Collect all document admin URLs"""
+        list_url = self.get_list_url()
+        
+        if self.has_instances:
+            self.urls.append(format_url_tuple(self.model_name, None, "list", list_url))
             
-            # Add delete URL for each document
-            delete_url = f"{base}/admin/documents/delete/{instance.id}/"
-            urls.append(format_url_tuple(model_name, instance_name, "delete", delete_url))
-    else:
-        # For models with no instances, always show the list URL with a note
-        if hasattr(output, "style"):
-            output.write(output.style.INFO(f"Note: {model_name} has no instances"))
+            # Add edit and delete URLs for actual instances
+            instances = get_instance_sample(self.output, self.document_model, self.max_instances)
+            for instance in instances:
+                instance_name = truncate_instance_name(str(instance))
+                edit_url = self.get_edit_url(instance.id)
+                self.urls.append(format_url_tuple(self.model_name, instance_name, "edit", edit_url))
+                
+                delete_url = self.get_delete_url(instance.id)
+                self.urls.append(format_url_tuple(self.model_name, instance_name, "delete", delete_url))
         else:
-            output.write(f"Note: {model_name} has no instances")
-        urls.append(
-            format_url_tuple(f"{model_name} (NO INSTANCES)", None, "list", list_url)
-        )
-
-    return urls
+            # For models with no instances, show the list URL with a note
+            if hasattr(self.output, "style"):
+                self.output.write(self.output.style.INFO(f"Note: {self.model_name} has no instances"))
+            else:
+                self.output.write(f"Note: {self.model_name} has no instances")
+            self.urls.append(
+                format_url_tuple(f"{self.model_name} (NO INSTANCES)", None, "list", list_url)
+            )
+        
+        return self.urls
+    
+    def document_urls(self) -> List[Tuple[str, Optional[str], str, str]]:
+        return self.collect_urls()

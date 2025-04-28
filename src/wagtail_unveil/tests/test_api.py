@@ -1,6 +1,6 @@
 from django.test import TestCase, RequestFactory
 from django.http import JsonResponse
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 import json
 
 from wagtail_unveil.api import UnveilApiView
@@ -43,8 +43,8 @@ class UnveilApiViewTests(TestCase):
         ]
         
         self.mock_document_urls = [
-            ('Document', 'edit', 'http://testserver/admin/documents/1/'),
-            ('Document', 'list', 'http://testserver/admin/documents/'),
+            ('Document', None, 'edit', 'http://testserver/admin/documents/1/'),
+            ('Document', None, 'list', 'http://testserver/admin/documents/'),
         ]
 
     @patch('wagtail_unveil.api.get_page_urls')
@@ -53,8 +53,8 @@ class UnveilApiViewTests(TestCase):
     @patch('wagtail_unveil.api.get_modeladmin_urls')
     @patch('wagtail_unveil.api.get_settings_admin_urls')
     @patch('wagtail_unveil.api.get_image_admin_urls')
-    @patch('wagtail_unveil.api.get_document_admin_urls')
-    def test_get_no_grouping(self, mock_doc_urls, mock_img_urls, mock_settings_urls, 
+    @patch('wagtail_unveil.api.DocumentHelper')
+    def test_get_no_grouping(self, mock_doc_helper, mock_img_urls, mock_settings_urls, 
                              mock_admin_urls, mock_viewset_urls, mock_snippet_urls, mock_page_urls):
         """Test the API view with no grouping."""
         # Set up the mocks to return our test data
@@ -64,7 +64,11 @@ class UnveilApiViewTests(TestCase):
         mock_admin_urls.return_value = self.mock_modeladmin_urls
         mock_settings_urls.return_value = self.mock_settings_urls
         mock_img_urls.return_value = self.mock_image_urls
-        mock_doc_urls.return_value = self.mock_document_urls
+        
+        # Mock the DocumentHelper class and its document_urls method
+        mock_doc_helper_instance = Mock()
+        mock_doc_helper_instance.document_urls.return_value = self.mock_document_urls
+        mock_doc_helper.return_value = mock_doc_helper_instance
         
         # Create a test request with no grouping
         request = self.factory.get('/api/unveil/')
@@ -116,8 +120,8 @@ class UnveilApiViewTests(TestCase):
     @patch('wagtail_unveil.api.get_modeladmin_urls')
     @patch('wagtail_unveil.api.get_settings_admin_urls')
     @patch('wagtail_unveil.api.get_image_admin_urls')
-    @patch('wagtail_unveil.api.get_document_admin_urls')
-    def test_get_group_by_interface(self, mock_doc_urls, mock_img_urls, mock_settings_urls, 
+    @patch('wagtail_unveil.api.DocumentHelper')
+    def test_get_group_by_interface(self, mock_doc_helper, mock_img_urls, mock_settings_urls, 
                                     mock_admin_urls, mock_viewset_urls, mock_snippet_urls, mock_page_urls):
         """Test the API view with grouping by interface."""
         # Set up the mocks to return our test data
@@ -127,7 +131,11 @@ class UnveilApiViewTests(TestCase):
         mock_admin_urls.return_value = self.mock_modeladmin_urls
         mock_settings_urls.return_value = self.mock_settings_urls
         mock_img_urls.return_value = self.mock_image_urls
-        mock_doc_urls.return_value = self.mock_document_urls
+        
+        # Mock the DocumentHelper class and its document_urls method
+        mock_doc_helper_instance = Mock()
+        mock_doc_helper_instance.document_urls.return_value = self.mock_document_urls
+        mock_doc_helper.return_value = mock_doc_helper_instance
         
         # Create a test request with interface grouping
         request = self.factory.get('/api/unveil/', {'group_by': 'interface'})
@@ -152,15 +160,21 @@ class UnveilApiViewTests(TestCase):
         # Check that counts match our test data
         backend_urls_count = sum(1 for urls in [
             self.mock_page_urls, self.mock_snippet_urls, self.mock_modelviewset_urls,
-            self.mock_modeladmin_urls, self.mock_settings_urls, self.mock_image_urls,
-            self.mock_document_urls
+            self.mock_modeladmin_urls, self.mock_settings_urls, self.mock_image_urls
         ] for model, url_type, url in urls if url_type != 'frontend' and '/admin/' in url or url_type in ['admin', 'edit', 'list'])
+        
+        # Add document URLs count separately since they have a different structure
+        backend_urls_count += sum(1 for model, instance, url_type, url in self.mock_document_urls
+                                 if url_type != 'frontend' and '/admin/' in url or url_type in ['admin', 'edit', 'list'])
         
         frontend_urls_count = sum(1 for urls in [
             self.mock_page_urls, self.mock_snippet_urls, self.mock_modelviewset_urls,
-            self.mock_modeladmin_urls, self.mock_settings_urls, self.mock_image_urls,
-            self.mock_document_urls
+            self.mock_modeladmin_urls, self.mock_settings_urls, self.mock_image_urls
         ] for model, url_type, url in urls if url_type == 'frontend' or ('/admin/' not in url and url_type not in ['admin', 'edit', 'list']))
+        
+        # Add document URLs count separately
+        frontend_urls_count += sum(1 for model, instance, url_type, url in self.mock_document_urls
+                                  if url_type == 'frontend' or ('/admin/' not in url and url_type not in ['admin', 'edit', 'list']))
         
         self.assertEqual(response_data['meta']['backend_count'], backend_urls_count)
         self.assertEqual(response_data['meta']['frontend_count'], frontend_urls_count)
@@ -180,8 +194,8 @@ class UnveilApiViewTests(TestCase):
     @patch('wagtail_unveil.api.get_modeladmin_urls')
     @patch('wagtail_unveil.api.get_settings_admin_urls')
     @patch('wagtail_unveil.api.get_image_admin_urls')
-    @patch('wagtail_unveil.api.get_document_admin_urls')
-    def test_get_group_by_type(self, mock_doc_urls, mock_img_urls, mock_settings_urls, 
+    @patch('wagtail_unveil.api.DocumentHelper')
+    def test_get_group_by_type(self, mock_doc_helper, mock_img_urls, mock_settings_urls, 
                                mock_admin_urls, mock_viewset_urls, mock_snippet_urls, mock_page_urls):
         """Test the API view with grouping by type."""
         # Set up the mocks to return our test data
@@ -191,7 +205,11 @@ class UnveilApiViewTests(TestCase):
         mock_admin_urls.return_value = self.mock_modeladmin_urls
         mock_settings_urls.return_value = self.mock_settings_urls
         mock_img_urls.return_value = self.mock_image_urls
-        mock_doc_urls.return_value = self.mock_document_urls
+        
+        # Mock the DocumentHelper class and its document_urls method
+        mock_doc_helper_instance = Mock()
+        mock_doc_helper_instance.document_urls.return_value = self.mock_document_urls
+        mock_doc_helper.return_value = mock_doc_helper_instance
         
         # Create a test request with type grouping
         request = self.factory.get('/api/unveil/', {'group_by': 'type'})
@@ -216,13 +234,16 @@ class UnveilApiViewTests(TestCase):
         # Check that we have type_counts in the metadata
         self.assertIn('type_counts', response_data['meta'])
         
-        # Get unique url_types from our test data
+        # Get unique url_types from our test data (excluding document URLs which have a different structure)
         url_types = set()
         for urls in [self.mock_page_urls, self.mock_snippet_urls, self.mock_modelviewset_urls,
-                     self.mock_modeladmin_urls, self.mock_settings_urls, self.mock_image_urls,
-                     self.mock_document_urls]:
+                     self.mock_modeladmin_urls, self.mock_settings_urls, self.mock_image_urls]:
             for _, url_type, _ in urls:
                 url_types.add(url_type)
+                
+        # Add url_types from document URLs
+        for _, _, url_type, _ in self.mock_document_urls:
+            url_types.add(url_type)
         
         # Check that we have all url_types as keys in the grouped data
         for url_type in url_types:
@@ -230,11 +251,14 @@ class UnveilApiViewTests(TestCase):
             
         # Check that the type counts match the number of URLs for each type
         for url_type in url_types:
+            # Count standard URLs
             count = sum(1 for urls in [
                 self.mock_page_urls, self.mock_snippet_urls, self.mock_modelviewset_urls,
-                self.mock_modeladmin_urls, self.mock_settings_urls, self.mock_image_urls,
-                self.mock_document_urls
+                self.mock_modeladmin_urls, self.mock_settings_urls, self.mock_image_urls
             ] for _, t, _ in urls if t == url_type)
+            
+            # Count document URLs separately
+            count += sum(1 for _, _, t, _ in self.mock_document_urls if t == url_type)
             
             self.assertEqual(response_data['meta']['type_counts'][url_type], count)
             self.assertEqual(len(response_data['urls'][url_type]), count)
@@ -245,8 +269,8 @@ class UnveilApiViewTests(TestCase):
     @patch('wagtail_unveil.api.get_modeladmin_urls')
     @patch('wagtail_unveil.api.get_settings_admin_urls')
     @patch('wagtail_unveil.api.get_image_admin_urls')
-    @patch('wagtail_unveil.api.get_document_admin_urls')
-    def test_get_with_custom_parameters(self, mock_doc_urls, mock_img_urls, mock_settings_urls, 
+    @patch('wagtail_unveil.api.DocumentHelper')
+    def test_get_with_custom_parameters(self, mock_doc_helper, mock_img_urls, mock_settings_urls, 
                                         mock_admin_urls, mock_viewset_urls, mock_snippet_urls, mock_page_urls):
         """Test the API view with custom parameters."""
         # Set up the mocks to return our test data
@@ -256,7 +280,11 @@ class UnveilApiViewTests(TestCase):
         mock_admin_urls.return_value = self.mock_modeladmin_urls
         mock_settings_urls.return_value = self.mock_settings_urls
         mock_img_urls.return_value = self.mock_image_urls
-        mock_doc_urls.return_value = self.mock_document_urls
+        
+        # Mock the DocumentHelper class and its document_urls method
+        mock_doc_helper_instance = Mock()
+        mock_doc_helper_instance.document_urls.return_value = self.mock_document_urls
+        mock_doc_helper.return_value = mock_doc_helper_instance
         
         # Create a test request with custom parameters
         request = self.factory.get('/api/unveil/', {
@@ -285,7 +313,12 @@ class UnveilApiViewTests(TestCase):
         
         # Check the same for other helper functions
         for mock_func in [mock_snippet_urls, mock_viewset_urls, mock_admin_urls, 
-                          mock_settings_urls, mock_img_urls, mock_doc_urls]:
+                          mock_settings_urls, mock_img_urls]:
             mock_func.assert_called_once()
             self.assertEqual(mock_func.call_args[0][1], 'https://example.com')
             self.assertEqual(mock_func.call_args[0][2], 5)
+            
+        # Check that DocumentHelper was created with the right parameters
+        mock_doc_helper.assert_called_once()
+        self.assertEqual(mock_doc_helper.call_args[0][1], 'https://example.com')
+        self.assertEqual(mock_doc_helper.call_args[0][2], 5)

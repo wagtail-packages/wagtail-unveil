@@ -10,7 +10,7 @@ from .helpers.modelviewset_helpers import get_modelviewset_urls
 from .helpers.modeladmin_helpers import get_modeladmin_urls
 from .helpers.settings_helpers import get_settings_admin_urls
 from .helpers.image_helpers import get_image_admin_urls
-from .helpers.document_helpers import get_document_admin_urls
+from .helpers.document_helpers import DocumentHelper
 
 
 class UnveilReportView(ReportView):
@@ -110,7 +110,8 @@ class UnveilReportView(ReportView):
             counter += 1
             
         # Get document URLs
-        document_urls = get_document_admin_urls(output, base_url, max_instances)
+        document_helper = DocumentHelper(output, base_url, max_instances)
+        document_urls = document_helper.document_urls()
         for model_name, url_type, url in document_urls:
             all_urls.append(UrlEntry(counter, model_name, url_type, url))
             counter += 1

@@ -2,63 +2,13 @@ from django.test import TestCase
 from io import StringIO
 from unittest.mock import Mock, patch
 
-from wagtail.documents.models import Document
 
-from wagtail_unveil.helpers.document_helpers import (
-    get_document_model,
-    get_document_admin_urls,
-)
+from wagtail_unveil.helpers.document_helpers import DocumentHelper
 
 
-class GetDocumentModelTests(TestCase):
-    """Tests for the get_document_model function."""
-
-    @patch('wagtail_unveil.helpers.document_helpers.get_document_model_wagtail')
-    def test_default_document_model(self, mock_get_document_model_wagtail):
-        """Test get_document_model returns the default Document model when no custom model is configured."""
-        mock_get_document_model_wagtail.return_value = Document
-        self.assertEqual(get_document_model(), Document)
-
-    @patch('wagtail_unveil.helpers.document_helpers.get_document_model_wagtail')
-    def test_custom_document_model(self, mock_get_document_model_wagtail):
-        """Test get_document_model returns the custom document model when one is configured."""
-        mock_custom_model = Mock()
-        mock_get_document_model_wagtail.return_value = mock_custom_model
-        
-        # Call the function
-        result = get_document_model()
-        
-        # Check the result
-        self.assertEqual(result, mock_custom_model)
-
-    @patch('wagtail_unveil.helpers.document_helpers.get_document_model_wagtail')
-    def test_invalid_document_model_lookup_error(self, mock_get_document_model_wagtail):
-        """Test get_document_model returns the default model when an invalid model is configured (LookupError)."""
-        # Set up the mock to return Document (this would happen if there was an error in Wagtail)
-        mock_get_document_model_wagtail.return_value = Document
-        
-        # Call the function
-        result = get_document_model()
-        
-        # Check the result
-        self.assertEqual(result, Document)
-
-    @patch('wagtail_unveil.helpers.document_helpers.get_document_model_wagtail')
-    def test_invalid_document_model_value_error(self, mock_get_document_model_wagtail):
-        """Test get_document_model returns the default model when an invalid model is configured (ValueError)."""
-        # Set up the mock to return Document (this would happen if there was an error in Wagtail)
-        mock_get_document_model_wagtail.return_value = Document
-        
-        # Call the function
-        result = get_document_model()
-        
-        # Check the result
-        self.assertEqual(result, Document)
-
-
-class GetDocumentAdminUrlsTests(TestCase):
-    """Tests for the get_document_admin_urls function."""
-
+class DocumentHelperTests(TestCase):
+    """Tests for the DocumentHelper class."""
+    
     def setUp(self):
         self.output = StringIO()
         self.base_url = "http://testserver"
@@ -70,13 +20,35 @@ class GetDocumentAdminUrlsTests(TestCase):
         self.mock_document_model._meta.model_name = "document"
 
     @patch('wagtail_unveil.helpers.document_helpers.get_document_model')
+    def test_initialization(self, mock_get_document_model):
+        """Test DocumentHelper initialization sets up the correct attributes."""
+        mock_get_document_model.return_value = self.mock_document_model
+        
+        helper = DocumentHelper(self.output, self.base_url, self.max_instances)
+        
+        self.assertEqual(helper.base, self.base_url.rstrip('/'))
+        self.assertEqual(helper.document_model, self.mock_document_model)
+        self.assertEqual(helper.model_name, "wagtaildocs.document")
+        
+    @patch('wagtail_unveil.helpers.document_helpers.get_document_model')
+    def test_url_methods(self, mock_get_document_model):
+        """Test URL generation methods return correct URLs."""
+        mock_get_document_model.return_value = self.mock_document_model
+        
+        helper = DocumentHelper(self.output, self.base_url, self.max_instances)
+        
+        self.assertEqual(helper.get_list_url(), "http://testserver/admin/documents/")
+        self.assertEqual(helper.get_edit_url(123), "http://testserver/admin/documents/edit/123/")
+        self.assertEqual(helper.get_delete_url(456), "http://testserver/admin/documents/delete/456/")
+
+    @patch('wagtail_unveil.helpers.document_helpers.get_document_model')
     @patch('wagtail_unveil.helpers.document_helpers.model_has_instances')
     @patch('wagtail_unveil.helpers.document_helpers.get_instance_sample')
     @patch('wagtail_unveil.helpers.document_helpers.truncate_instance_name')
     @patch('wagtail_unveil.helpers.document_helpers.format_url_tuple')
-    def test_with_instances(self, mock_format_url_tuple, mock_truncate_instance_name, 
-                            mock_get_instance_sample, mock_model_has_instances, mock_get_document_model):
-        """Test get_document_admin_urls when there are instances."""
+    def test_collect_urls_with_instances(self, mock_format_url_tuple, mock_truncate_instance_name, 
+                                       mock_get_instance_sample, mock_model_has_instances, mock_get_document_model):
+        """Test collect_urls method when there are document instances."""
         # Set up mocks
         mock_get_document_model.return_value = self.mock_document_model
         mock_model_has_instances.return_value = True
@@ -95,8 +67,9 @@ class GetDocumentAdminUrlsTests(TestCase):
         
         mock_format_url_tuple.side_effect = lambda model, instance_name, url_type, url: (model, instance_name, url_type)
         
-        # Call the function
-        result = get_document_admin_urls(self.output, self.base_url, self.max_instances)
+        # Create helper and collect URLs
+        helper = DocumentHelper(self.output, self.base_url, self.max_instances)
+        result = helper.collect_urls()
         
         # Check the results
         self.assertEqual(len(result), 5)  # 1 list + 2 edit URLs + 2 delete URLs
@@ -123,16 +96,17 @@ class GetDocumentAdminUrlsTests(TestCase):
     @patch('wagtail_unveil.helpers.document_helpers.get_document_model')
     @patch('wagtail_unveil.helpers.document_helpers.model_has_instances')
     @patch('wagtail_unveil.helpers.document_helpers.format_url_tuple')
-    def test_without_instances(self, mock_format_url_tuple, mock_model_has_instances, mock_get_document_model):
-        """Test get_document_admin_urls when there are no instances."""
+    def test_collect_urls_without_instances(self, mock_format_url_tuple, mock_model_has_instances, mock_get_document_model):
+        """Test collect_urls method when there are no document instances."""
         # Set up mocks
         mock_get_document_model.return_value = self.mock_document_model
         mock_model_has_instances.return_value = False
         
         mock_format_url_tuple.side_effect = lambda model, instance_name, url_type, url: (model, instance_name, url_type)
         
-        # Call the function
-        result = get_document_admin_urls(self.output, self.base_url, self.max_instances)
+        # Create helper and collect URLs
+        helper = DocumentHelper(self.output, self.base_url, self.max_instances)
+        result = helper.collect_urls()
         
         # Check the results
         self.assertEqual(len(result), 1)  # Only the list URL
@@ -147,8 +121,8 @@ class GetDocumentAdminUrlsTests(TestCase):
 
     @patch('wagtail_unveil.helpers.document_helpers.get_document_model')
     @patch('wagtail_unveil.helpers.document_helpers.model_has_instances')
-    def test_with_output_having_style(self, mock_model_has_instances, mock_get_document_model):
-        """Test get_document_admin_urls when output has style method."""
+    def test_collect_urls_with_styled_output(self, mock_model_has_instances, mock_get_document_model):
+        """Test collect_urls method when output has style method."""
         # Set up mocks
         mock_get_document_model.return_value = self.mock_document_model
         mock_model_has_instances.return_value = False
@@ -159,8 +133,24 @@ class GetDocumentAdminUrlsTests(TestCase):
         mock_output.style.INFO = lambda x: f"INFO: {x}"
         mock_output.write = Mock()
         
-        # Call the function
-        get_document_admin_urls(mock_output, self.base_url, self.max_instances)
+        # Create helper and collect URLs
+        helper = DocumentHelper(mock_output, self.base_url, self.max_instances)
+        helper.collect_urls()
         
         # Check that style.INFO was called correctly
         mock_output.write.assert_called_once_with(mock_output.style.INFO("Note: wagtaildocs.document has no instances"))
+
+    @patch('wagtail_unveil.helpers.document_helpers.get_document_model')
+    def test_document_urls_calls_collect_urls(self, mock_get_document_model):
+        """Test document_urls method calls collect_urls."""
+        mock_get_document_model.return_value = self.mock_document_model
+        
+        helper = DocumentHelper(self.output, self.base_url, self.max_instances)
+        # Mock the collect_urls method
+        helper.collect_urls = Mock(return_value=["url1", "url2"])
+        
+        result = helper.document_urls()
+        
+        # Verify collect_urls was called
+        helper.collect_urls.assert_called_once()
+        self.assertEqual(result, ["url1", "url2"])
