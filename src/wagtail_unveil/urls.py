@@ -1,11 +1,11 @@
-from django.urls import path
+# from django.urls import path
 
-from .api import UnveilApiView
+# from .api import UnveilApiView
 
-urlpatterns = [
-    path(
-        "urls/",
-        UnveilApiView.as_view(),
-        name="unveil_api_urls",
-    ),
-]
+# urlpatterns = [
+#     path(
+#         "urls/",
+#         UnveilApiView.as_view(),
+#         name="unveil_api_urls",
+#     ),
+# ]
