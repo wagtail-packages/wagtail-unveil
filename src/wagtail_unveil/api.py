@@ -4,7 +4,8 @@ from django.views import View
 from django.conf import settings
 
 from .helpers.page_helpers import get_page_urls
-from .helpers.snippet_helpers import get_snippet_urls, get_modelviewset_urls
+from .helpers.snippet_helpers import get_snippet_urls
+from .helpers.modelviewset_helpers import get_modelviewset_urls
 from .helpers.modeladmin_helpers import get_modeladmin_urls
 from .helpers.settings_helpers import get_settings_admin_urls
 from .helpers.image_helpers import get_image_admin_urls

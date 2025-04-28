@@ -21,9 +21,11 @@ from wagtail_unveil.helpers.page_helpers import (
 from wagtail_unveil.helpers.site_helpers import get_site_urls
 from wagtail_unveil.helpers.settings_helpers import get_settings_admin_urls
 from wagtail_unveil.helpers.snippet_helpers import (
+    get_snippet_urls,
+)
+from wagtail_unveil.helpers.modelviewset_helpers import (
     get_modelviewset_models,
     get_modelviewset_urls,
-    get_snippet_urls,
 )
 
 
