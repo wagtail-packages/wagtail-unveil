@@ -78,8 +78,7 @@ class PageHelperTests(TestCase):
     @patch('wagtail_unveil.helpers.page_helpers.model_has_instances')
     @patch('wagtail_unveil.helpers.page_helpers.get_instance_sample')
     @patch('wagtail_unveil.helpers.page_helpers.truncate_instance_name')
-    @patch('wagtail_unveil.helpers.page_helpers.format_url_tuple')
-    def test_collect_urls_with_instances(self, mock_format_url_tuple, mock_truncate_instance_name, 
+    def test_collect_urls_with_instances(self, mock_truncate_instance_name, 
                                        mock_get_instance_sample, mock_model_has_instances, 
                                        mock_get_page_models):
         """Test collect_urls method when there are page instances."""
@@ -89,9 +88,6 @@ class PageHelperTests(TestCase):
         mock_get_instance_sample.return_value = [self.mock_page1, self.mock_page2]
         mock_truncate_instance_name.side_effect = lambda x: f"Truncated {x}"
         
-        mock_format_url_tuple.side_effect = lambda model, instance_name, url_type, url: (
-            model, instance_name, url_type, url)
-        
         # Create helper and collect URLs
         helper = PageHelper(self.output, self.base_url, self.max_instances)
         result = helper.collect_urls()
@@ -100,48 +96,44 @@ class PageHelperTests(TestCase):
         # 2 instances x 3 URLs (edit, delete, frontend) = 6 URLs
         self.assertEqual(len(result), 6)
         
-        # Check edit URLs
-        mock_format_url_tuple.assert_any_call(
-            "wagtailcore.page", "Truncated Test Page 1", "edit", 
-            "http://testserver/admin/pages/1/edit/"
-        )
-        mock_format_url_tuple.assert_any_call(
-            "wagtailcore.page", "Truncated Test Page 2", "edit", 
-            "http://testserver/admin/pages/2/edit/"
-        )
+        # Check edit URLs format
+        self.assertEqual(result[0][0], "wagtailcore.page (Truncated Test Page 1)")
+        self.assertEqual(result[0][1], "Truncated Test Page 1")
+        self.assertEqual(result[0][2], "edit")
+        self.assertEqual(result[0][3], "http://testserver/admin/pages/1/edit/")
         
-        # Check delete URLs
-        mock_format_url_tuple.assert_any_call(
-            "wagtailcore.page", "Truncated Test Page 1", "delete", 
-            "http://testserver/admin/pages/1/delete/"
-        )
-        mock_format_url_tuple.assert_any_call(
-            "wagtailcore.page", "Truncated Test Page 2", "delete", 
-            "http://testserver/admin/pages/2/delete/"
-        )
+        self.assertEqual(result[1][0], "wagtailcore.page (Truncated Test Page 1)")
+        self.assertEqual(result[1][1], "Truncated Test Page 1")
+        self.assertEqual(result[1][2], "delete")
+        self.assertEqual(result[1][3], "http://testserver/admin/pages/1/delete/")
         
-        # Check frontend URLs
-        mock_format_url_tuple.assert_any_call(
-            "wagtailcore.page", "Truncated Test Page 1", "frontend", 
-            "http://testserver/test-page-1/"
-        )
-        mock_format_url_tuple.assert_any_call(
-            "wagtailcore.page", "Truncated Test Page 2", "frontend", 
-            "http://external-site.com/test-page-2/"
-        )
+        self.assertEqual(result[2][0], "wagtailcore.page (Truncated Test Page 1)")
+        self.assertEqual(result[2][1], "Truncated Test Page 1")
+        self.assertEqual(result[2][2], "frontend")
+        self.assertEqual(result[2][3], "http://testserver/test-page-1/")
+        
+        self.assertEqual(result[3][0], "wagtailcore.page (Truncated Test Page 2)")
+        self.assertEqual(result[3][1], "Truncated Test Page 2")
+        self.assertEqual(result[3][2], "edit")
+        self.assertEqual(result[3][3], "http://testserver/admin/pages/2/edit/")
+        
+        self.assertEqual(result[4][0], "wagtailcore.page (Truncated Test Page 2)")
+        self.assertEqual(result[4][1], "Truncated Test Page 2")
+        self.assertEqual(result[4][2], "delete")
+        self.assertEqual(result[4][3], "http://testserver/admin/pages/2/delete/")
+        
+        self.assertEqual(result[5][0], "wagtailcore.page (Truncated Test Page 2)")
+        self.assertEqual(result[5][1], "Truncated Test Page 2")
+        self.assertEqual(result[5][2], "frontend")
+        self.assertEqual(result[5][3], "http://external-site.com/test-page-2/")
 
     @patch('wagtail_unveil.helpers.page_helpers.get_page_models')
     @patch('wagtail_unveil.helpers.page_helpers.model_has_instances')
-    @patch('wagtail_unveil.helpers.page_helpers.format_url_tuple')
-    def test_collect_urls_without_instances(self, mock_format_url_tuple, 
-                                          mock_model_has_instances, mock_get_page_models):
+    def test_collect_urls_without_instances(self, mock_model_has_instances, mock_get_page_models):
         """Test collect_urls method when there are no page instances."""
         # Set up mocks
         mock_get_page_models.return_value = [self.mock_page_model]
         mock_model_has_instances.return_value = False
-        
-        mock_format_url_tuple.side_effect = lambda model, instance_name, url_type, url: (
-            model, instance_name, url_type, url)
         
         # Create helper and collect URLs
         helper = PageHelper(self.output, self.base_url, self.max_instances)
@@ -154,9 +146,10 @@ class PageHelperTests(TestCase):
         self.assertIn("Note: wagtailcore.page has no instances", self.output.getvalue())
         
         # Check that the list URL was added with the correct format and NO INSTANCES note
-        mock_format_url_tuple.assert_called_once_with(
-            "wagtailcore.page (NO INSTANCES)", None, "list", "http://testserver/admin/pages/"
-        )
+        self.assertEqual(result[0][0], "wagtailcore.page (NO INSTANCES)")
+        self.assertEqual(result[0][1], None)
+        self.assertEqual(result[0][2], "list")
+        self.assertEqual(result[0][3], "http://testserver/admin/pages/")
 
     @patch('wagtail_unveil.helpers.page_helpers.get_page_models')
     @patch('wagtail_unveil.helpers.page_helpers.model_has_instances')

@@ -217,12 +217,12 @@ class FormatUrlTupleTests(TestCase):
     def test_format_url_tuple_without_instance_name(self):
         """Test format_url_tuple without an instance name."""
         result = format_url_tuple("TestModel", url_type="list", url="/admin/test/")
-        self.assertEqual(result, ("TestModel", "list", "/admin/test/"))
+        self.assertEqual(result, ("TestModel", None, "list", "/admin/test/"))
 
     def test_format_url_tuple_with_instance_name(self):
         """Test format_url_tuple with an instance name."""
         result = format_url_tuple("TestModel", instance_name="Test Instance", url_type="edit", url="/admin/test/1/")
-        self.assertEqual(result, ("TestModel (Test Instance)", "edit", "/admin/test/1/"))
+        self.assertEqual(result, ("TestModel (Test Instance)", "Test Instance", "edit", "/admin/test/1/"))
 
 
 class TruncateInstanceNameTests(TestCase):
