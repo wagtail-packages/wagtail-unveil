@@ -142,9 +142,3 @@ class ModelViewSetHelper:
     def modelviewset_urls(self) -> List[Tuple[str, Optional[str], str, str]]:
         """Return all ModelViewSet URLs"""
         return self.collect_urls()
-
-
-def get_modelviewset_urls(output, base_url, max_instances):
-    """Get admin URLs for models registered with ModelViewSet (legacy function)"""
-    helper = ModelViewSetHelper(output, base_url, max_instances)
-    return helper.modelviewset_urls()
