@@ -45,8 +45,7 @@ class ImageHelperTests(TestCase):
     @patch('wagtail_unveil.helpers.image_helpers.model_has_instances')
     @patch('wagtail_unveil.helpers.image_helpers.get_instance_sample')
     @patch('wagtail_unveil.helpers.image_helpers.truncate_instance_name')
-    @patch('wagtail_unveil.helpers.image_helpers.format_url_tuple')
-    def test_collect_urls_with_instances(self, mock_format_url_tuple, mock_truncate_instance_name, 
+    def test_collect_urls_with_instances(self, mock_truncate_instance_name, 
                                        mock_get_instance_sample, mock_model_has_instances, mock_get_image_model):
         """Test collect_urls method when there are image instances."""
         # Set up mocks
@@ -65,58 +64,54 @@ class ImageHelperTests(TestCase):
         
         mock_truncate_instance_name.side_effect = lambda x: f"Truncated {x}"
         
-        mock_format_url_tuple.side_effect = lambda model, instance_name, url_type, url: (model, instance_name, url_type)
-        
-        # Create helper and collect URLs
+        # Create helper and collect URLs, with proper method mocks
         helper = ImageHelper(self.output, self.base_url, self.max_instances)
-        result = helper.collect_urls()
+        helper.add_list_url = Mock()
+        helper.add_edit_url = Mock()
+        helper.add_delete_url = Mock()
         
-        # Check the results
-        self.assertEqual(len(result), 5)  # 1 list + 2 edit URLs + 2 delete URLs
+        helper.collect_urls()
         
-        # Check that the list URL was added with the correct format
-        mock_format_url_tuple.assert_any_call("wagtailimages.image", None, "list", "http://testserver/admin/images/")
+        # Check that the helper methods were called correctly
+        helper.add_list_url.assert_called_once_with("wagtailimages.image", "http://testserver/admin/images/")
         
         # Check that edit URLs were added with the correct format
-        mock_format_url_tuple.assert_any_call(
-            "wagtailimages.image", "Truncated Image 1", "edit", "http://testserver/admin/images/1/"
+        helper.add_edit_url.assert_any_call(
+            "wagtailimages.image", "Truncated Image 1", "http://testserver/admin/images/1/"
         )
-        mock_format_url_tuple.assert_any_call(
-            "wagtailimages.image", "Truncated Image 2", "edit", "http://testserver/admin/images/2/"
+        helper.add_edit_url.assert_any_call(
+            "wagtailimages.image", "Truncated Image 2", "http://testserver/admin/images/2/"
         )
         
         # Check that delete URLs were added with the correct format
-        mock_format_url_tuple.assert_any_call(
-            "wagtailimages.image", "Truncated Image 1", "delete", "http://testserver/admin/images/1/delete/"
+        helper.add_delete_url.assert_any_call(
+            "wagtailimages.image", "Truncated Image 1", "http://testserver/admin/images/1/delete/"
         )
-        mock_format_url_tuple.assert_any_call(
-            "wagtailimages.image", "Truncated Image 2", "delete", "http://testserver/admin/images/2/delete/"
+        helper.add_delete_url.assert_any_call(
+            "wagtailimages.image", "Truncated Image 2", "http://testserver/admin/images/2/delete/"
         )
 
     @patch('wagtail_unveil.helpers.image_helpers.get_image_model')
     @patch('wagtail_unveil.helpers.image_helpers.model_has_instances')
-    @patch('wagtail_unveil.helpers.image_helpers.format_url_tuple')
-    def test_collect_urls_without_instances(self, mock_format_url_tuple, mock_model_has_instances, mock_get_image_model):
+    def test_collect_urls_without_instances(self, mock_model_has_instances, mock_get_image_model):
         """Test collect_urls method when there are no image instances."""
         # Set up mocks
         mock_get_image_model.return_value = self.mock_image_model
         mock_model_has_instances.return_value = False
         
-        mock_format_url_tuple.side_effect = lambda model, instance_name, url_type, url: (model, instance_name, url_type)
-        
-        # Create helper and collect URLs
+        # Create helper and collect URLs, with proper method mocks
         helper = ImageHelper(self.output, self.base_url, self.max_instances)
-        result = helper.collect_urls()
+        helper.write_no_instances_message = Mock()
+        helper.add_url_for_model_with_no_instances = Mock()
         
-        # Check the results
-        self.assertEqual(len(result), 1)  # Only the list URL
+        helper.collect_urls()
         
-        # Verify the correct message was written to output
-        self.assertIn("Note: wagtailimages.image has no instances", self.output.getvalue())
+        # Verify write_no_instances_message was called
+        helper.write_no_instances_message.assert_called_once_with("wagtailimages.image")
         
-        # Check that the list URL was added with the correct format and NO INSTANCES note
-        mock_format_url_tuple.assert_called_once_with(
-            "wagtailimages.image (NO INSTANCES)", None, "list", "http://testserver/admin/images/"
+        # Check that add_url_for_model_with_no_instances was called with the correct arguments
+        helper.add_url_for_model_with_no_instances.assert_called_once_with(
+            "wagtailimages.image", "http://testserver/admin/images/"
         )
 
     @patch('wagtail_unveil.helpers.image_helpers.get_image_model')
@@ -135,6 +130,7 @@ class ImageHelperTests(TestCase):
         
         # Create helper and collect URLs
         helper = ImageHelper(mock_output, self.base_url, self.max_instances)
+        helper.add_url_for_model_with_no_instances = Mock()
         helper.collect_urls()
         
         # Check that style.INFO was called correctly
