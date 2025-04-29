@@ -11,7 +11,6 @@ from wagtail.snippets.models import get_snippet_models
 
 from wagtail_unveil.helpers.document_helpers import DocumentHelper
 from wagtail_unveil.helpers.image_helpers import ImageHelper
-# from wagtail_unveil.helpers.modeladmin_helpers import ModelAdminHelper
 from wagtail_unveil.helpers.modelviewset_helpers import (
     ModelViewSetHelper,
     get_modelviewset_models,
@@ -160,17 +159,6 @@ class Command(BaseCommand):
         snippet_helper = SnippetHelper(self.stdout, base_url, max_instances)
         snippet_urls = snippet_helper.snippet_urls()
         urls.extend(snippet_urls)
-
-        # # Get generic Django models with ModelAdmin
-        # modeladmin_helper = ModelAdminHelper(self.stdout, base_url, max_instances)
-        # modeladmin_models = modeladmin_helper.get_modeladmin_models()
-        # self.stdout.write(f"Found {len(modeladmin_models)} modeladmin models:")
-        # for model in modeladmin_models:
-        #     self.stdout.write(f"  - {model.__name__}")
-
-        # # Get URLs for modeladmin models
-        # modeladmin_urls = modeladmin_helper.modeladmin_urls()
-        # urls.extend(modeladmin_urls)
 
         # Get models registered with ModelViewSet
         modelviewset_models = get_modelviewset_models()
