@@ -4,7 +4,7 @@ from wagtail.models import Page, Site
 from dataclasses import dataclass
 from typing import List, Tuple, Optional, Set
 
-from .base import BaseHelper, format_url_tuple
+from .base import BaseHelper
 
 
 @dataclass
@@ -20,17 +20,13 @@ class SiteHelper(BaseHelper):
     def add_general_pages_listing_url(self):
         """Add the general pages listing URL"""
         pages_listing_url = f"{self.base}/admin/pages/"
-        self.urls.append(
-            format_url_tuple("All Pages Listing", None, "list", pages_listing_url)
-        )
+        self.add_list_url("All Pages Listing", pages_listing_url)
     
     def add_search_urls(self):
         """Add the search URLs - one with no results, one with results"""
         # Add URL with no results
         empty_search_url = f"{self.base}/admin/pages/search/?q=xyznonexistentsearchterm123"
-        self.urls.append(
-            format_url_tuple("Page Search (No Results)", None, "list", empty_search_url)
-        )
+        self.add_list_url("Page Search (No Results)", empty_search_url)
         
         # Add URL with results
         try:
@@ -55,9 +51,7 @@ class SiteHelper(BaseHelper):
             result_search_url = f"{self.base}/admin/pages/search/?q=the"
             result_description = f"Page Search (With Results - 'the') (Error: {str(e)})"
         
-        self.urls.append(
-            format_url_tuple(result_description, None, "list", result_search_url)
-        )
+        self.add_list_url(result_description, result_search_url)
     
     def add_site_urls(self, site: Site):
         """Add URLs for a specific site"""
@@ -69,41 +63,29 @@ class SiteHelper(BaseHelper):
         
         # Only add the frontend URL if we haven't added it yet
         if site_url not in self.added_frontend_urls:
-            self.urls.append(
-                format_url_tuple("Site default page", None, "frontend", site_url)
-            )
+            # Using tuple approach to create a custom frontend URL entry
+            # (display_name, instance_name, url_type, url)
+            self.urls.append(("Site default page", None, "frontend", site_url))
             self.added_frontend_urls.add(site_url)
         
         # Always add admin edit URL for the root page
         admin_url = f"{self.base}/admin/pages/{root_page.id}/edit/"
-        self.urls.append(
-            format_url_tuple(
-                "Site default page", root_page.title, "edit", admin_url
-            )
-        )
+        self.add_edit_url("Site default page", root_page.title, admin_url)
         
         # Add delete URL for the root page
         delete_url = f"{self.base}/admin/pages/{root_page.id}/delete/"
-        self.urls.append(
-            format_url_tuple(
-                "Site default page", root_page.title, "delete", delete_url
-            )
-        )
+        self.add_delete_url("Site default page", root_page.title, delete_url)
         
         # Add the specific page explorer URL for the root page
         explorer_url = f"{self.base}/admin/pages/{root_page.id}/"
-        self.urls.append(
-            format_url_tuple(
-                "Site default page explorer", root_page.title, "list", explorer_url
-            )
-        )
+        self.add_list_url(f"Site default page explorer ({root_page.title})", explorer_url)
         
         # If this is the default site, also add the admin dashboard URL
         if site.is_default_site:
             dashboard_url = f"{self.base}/admin/"
-            self.urls.append(
-                format_url_tuple("Admin dashboard", None, "admin", dashboard_url)
-            )
+            # Using tuple approach to create a custom admin URL entry
+            # (display_name, instance_name, url_type, url)
+            self.urls.append(("Admin dashboard", None, "admin", dashboard_url))
     
     def collect_urls(self) -> List[Tuple[str, Optional[str], str, str]]:
         """Collect all site-related admin URLs"""
@@ -131,10 +113,10 @@ class SiteHelper(BaseHelper):
                 self.output.write(f"Error getting site URLs: {str(e)}")
                 
         return self.urls
-
-
-# Keep the original function for backward compatibility
-def get_site_urls(output, base_url):
-    """Get URLs for site default pages"""
-    helper = SiteHelper(output=output, base_url=base_url, max_instances=1)
-    return helper.collect_urls()
+    
+    def site_urls(self) -> List[Tuple[str, Optional[str], str, str]]:
+        """
+        Get all site-related admin URLs.
+        This method is a wrapper around the collect_urls method.
+        """
+        return self.collect_urls()

@@ -21,7 +21,7 @@ from wagtail_unveil.helpers.modelviewset_helpers import (
 )
 from wagtail_unveil.helpers.page_helpers import PageHelper
 from wagtail_unveil.helpers.settings_helpers import get_settings_admin_urls
-from wagtail_unveil.helpers.site_helpers import get_site_urls
+from wagtail_unveil.helpers.site_helpers import SiteHelper
 from wagtail_unveil.helpers.snippet_helpers import SnippetHelper
 
 
@@ -138,7 +138,8 @@ class Command(BaseCommand):
         urls = []
 
         # Get site default pages
-        site_urls = get_site_urls(self.stdout, base_url)
+        site_helper = SiteHelper(output=self.stdout, base_url=base_url, max_instances=max_instances)
+        site_urls = site_helper.site_urls()
         urls.extend(site_urls)
 
         # Get all page models
