@@ -67,18 +67,18 @@ class SnippetHelperTests(TestCase):
         self.assertEqual(len(result), 6)
         
         # Check list URL for the model with instances
-        self.assertIn(("app1.model1", None, "list", "http://testserver/admin/snippets/app1/model1/"), result)
+        self.assertIn(("app1.model1", "list", "http://testserver/admin/snippets/app1/model1/"), result)
         
         # Check edit URLs for instances
-        self.assertIn(("app1.model1", "Instance 1", "edit", "http://testserver/admin/snippets/app1/model1/1/"), result)
-        self.assertIn(("app1.model1", "Instance 2", "edit", "http://testserver/admin/snippets/app1/model1/2/"), result)
+        self.assertIn(("app1.model1 (Instance 1)", "edit", "http://testserver/admin/snippets/app1/model1/1/"), result)
+        self.assertIn(("app1.model1 (Instance 2)", "edit", "http://testserver/admin/snippets/app1/model1/2/"), result)
         
         # Check delete URLs for instances
-        self.assertIn(("app1.model1", "Instance 1", "delete", "http://testserver/admin/snippets/app1/model1/1/delete/"), result)
-        self.assertIn(("app1.model1", "Instance 2", "delete", "http://testserver/admin/snippets/app1/model1/2/delete/"), result)
+        self.assertIn(("app1.model1 (Instance 1)", "delete", "http://testserver/admin/snippets/app1/model1/1/delete/"), result)
+        self.assertIn(("app1.model1 (Instance 2)", "delete", "http://testserver/admin/snippets/app1/model1/2/delete/"), result)
         
         # Check list URL for the model without instances
-        self.assertIn(("app2.model2 (NO INSTANCES)", None, "list", "http://testserver/admin/snippets/app2/model2/"), result)
+        self.assertIn(("app2.model2 (NO INSTANCES)", "list", "http://testserver/admin/snippets/app2/model2/"), result)
         
         # Check the output message for models with no instances
         self.assertIn("Note: app2.model2 has no instances", self.output.getvalue())
@@ -113,8 +113,8 @@ class SnippetHelperTests(TestCase):
         self.assertEqual(len(result), 2)  # 2 list URLs for models with no instances
         
         # Check list URLs for models with no instances
-        self.assertIn(("app1.model1 (NO INSTANCES)", None, "list", "http://testserver/admin/snippets/app1/model1/"), result)
-        self.assertIn(("app2.model2 (NO INSTANCES)", None, "list", "http://testserver/admin/snippets/app2/model2/"), result)
+        self.assertIn(("app1.model1 (NO INSTANCES)", "list", "http://testserver/admin/snippets/app1/model1/"), result)
+        self.assertIn(("app2.model2 (NO INSTANCES)", "list", "http://testserver/admin/snippets/app2/model2/"), result)
         
         # Check the output messages for models with no instances
         self.assertIn("Note: app1.model1 has no instances", self.output.getvalue())
