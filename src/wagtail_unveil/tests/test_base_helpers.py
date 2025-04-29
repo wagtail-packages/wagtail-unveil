@@ -1,6 +1,6 @@
 from django.test import TestCase
 from io import StringIO
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 from wagtail_unveil.helpers.base import (
     get_instance_sample,
@@ -17,39 +17,55 @@ class GetInstanceSampleTests(TestCase):
         self.mock_model._meta.app_label = "test_app"
         self.mock_model._meta.model_name = "test_model"
 
-    @patch('wagtail_unveil.helpers.base.safe_query')
-    def test_get_instance_sample_with_max_instances(self, mock_safe_query):
+    def test_get_instance_sample_with_max_instances(self):
         """Test get_instance_sample with a positive max_instances value."""
-        mock_safe_query.return_value = ["instance1", "instance2"]
+        # Setup mock objects
+        self.mock_model.objects = Mock()
+        all_queryset = Mock()
+        self.mock_model.objects.all = Mock(return_value=all_queryset)
+        all_queryset.__getitem__ = Mock(return_value=["instance1", "instance2"])
         
         result = get_instance_sample(self.output, self.mock_model, max_instances=2)
         
         self.assertEqual(result, ["instance1", "instance2"])
-        # Check that safe_query was called with the correct parameters
-        mock_safe_query.assert_called_once()
-        # Check the first parameter (output)
-        self.assertEqual(mock_safe_query.call_args[0][0], self.output)
-        # Check the fallback_value and model_name as keyword arguments
-        self.assertEqual(mock_safe_query.call_args[1]['fallback_value'], [])
-        self.assertEqual(mock_safe_query.call_args[1]['model_name'], "test_app.test_model")
+        self.mock_model.objects.all.assert_called_once()
+        all_queryset.__getitem__.assert_called_once_with(slice(None, 2))
 
-    @patch('wagtail_unveil.helpers.base.safe_query')
-    def test_get_instance_sample_with_zero_max_instances(self, mock_safe_query):
+    def test_get_instance_sample_with_zero_max_instances(self):
         """Test get_instance_sample with max_instances=0 (get all instances)."""
-        mock_safe_query.return_value = ["instance1", "instance2", "instance3"]
+        # Setup mock objects
+        self.mock_model.objects = Mock()
+        all_queryset = ["instance1", "instance2", "instance3"]
+        self.mock_model.objects.all = Mock(return_value=all_queryset)
         
         result = get_instance_sample(self.output, self.mock_model, max_instances=0)
         
         self.assertEqual(result, ["instance1", "instance2", "instance3"])
+        self.mock_model.objects.all.assert_called_once()
 
-    @patch('wagtail_unveil.helpers.base.safe_query')
-    def test_get_instance_sample_with_none_max_instances(self, mock_safe_query):
+    def test_get_instance_sample_with_none_max_instances(self):
         """Test get_instance_sample with max_instances=None (get all instances)."""
-        mock_safe_query.return_value = ["instance1", "instance2", "instance3"]
+        # Setup mock objects
+        self.mock_model.objects = Mock()
+        all_queryset = ["instance1", "instance2", "instance3"]
+        self.mock_model.objects.all = Mock(return_value=all_queryset)
         
         result = get_instance_sample(self.output, self.mock_model, max_instances=None)
         
         self.assertEqual(result, ["instance1", "instance2", "instance3"])
+        self.mock_model.objects.all.assert_called_once()
+
+    def test_get_instance_sample_with_error(self):
+        """Test get_instance_sample when an error occurs."""
+        # Setup mock objects to raise an exception
+        self.mock_model.objects = Mock()
+        self.mock_model.objects.all = Mock(side_effect=AttributeError("Test error"))
+        
+        result = get_instance_sample(self.output, self.mock_model)
+        
+        self.assertEqual(result, [])
+        self.assertIn("Error getting instances for test_app.test_model", self.output.getvalue())
+        self.assertIn("Test error", self.output.getvalue())
 
 
 class ModelHasInstancesTests(TestCase):
@@ -60,30 +76,40 @@ class ModelHasInstancesTests(TestCase):
         self.mock_model._meta.app_label = "test_app"
         self.mock_model._meta.model_name = "test_model"
 
-    @patch('wagtail_unveil.helpers.base.safe_query')
-    def test_model_has_instances_true(self, mock_safe_query):
+    def test_model_has_instances_true(self):
         """Test model_has_instances when the model has instances."""
-        mock_safe_query.return_value = True
+        # Setup mock objects
+        self.mock_model.objects = Mock()
+        self.mock_model.objects.exists = Mock(return_value=True)
         
         result = model_has_instances(self.output, self.mock_model)
         
         self.assertTrue(result)
-        # Check that safe_query was called with the correct parameters
-        mock_safe_query.assert_called_once()
-        # Check the first parameter (output)
-        self.assertEqual(mock_safe_query.call_args[0][0], self.output)
-        # Check the fallback_value and model_name as keyword arguments
-        self.assertEqual(mock_safe_query.call_args[1]['fallback_value'], False)
-        self.assertEqual(mock_safe_query.call_args[1]['model_name'], "test_app.test_model")
+        self.mock_model.objects.exists.assert_called_once()
 
-    @patch('wagtail_unveil.helpers.base.safe_query')
-    def test_model_has_instances_false(self, mock_safe_query):
+    def test_model_has_instances_false(self):
         """Test model_has_instances when the model has no instances."""
-        mock_safe_query.return_value = False
+        # Setup mock objects
+        self.mock_model.objects = Mock()
+        self.mock_model.objects.exists = Mock(return_value=False)
         
         result = model_has_instances(self.output, self.mock_model)
         
         self.assertFalse(result)
+        self.mock_model.objects.exists.assert_called_once()
+
+    def test_model_has_instances_with_error(self):
+        """Test model_has_instances when an error occurs."""
+        # Setup mock objects to raise an exception
+        self.mock_model.objects = Mock()
+        self.mock_model.objects.exists = Mock(side_effect=AttributeError("Test error"))
+        
+        result = model_has_instances(self.output, self.mock_model)
+        
+        self.assertFalse(result)
+        self.assertIn("Error checking if test_app.test_model has instances", self.output.getvalue())
+        self.assertIn("Test error", self.output.getvalue())
+
 
 class TruncateInstanceNameTests(TestCase):
     def test_truncate_instance_name_short(self):

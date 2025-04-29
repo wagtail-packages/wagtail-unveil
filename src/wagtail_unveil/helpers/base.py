@@ -4,38 +4,6 @@ from django.db import DatabaseError, OperationalError
 from typing import Any, List, Optional, Tuple
 
 
-def safe_query(
-    output, query_func, fallback_value=None, model_name=None, error_msg=None
-):
-    """
-    Safely execute a database query with standardized error handling.
-
-    Args:
-        output: The stdout writer from the command
-        query_func: Function that performs the database query
-        fallback_value: Value to return if the query fails
-        model_name: Name of the model for error reporting
-        error_msg: Custom error message
-
-    Returns:
-        The result of the query or the fallback value if it fails
-    """
-    try:
-        return query_func()
-    except (
-        AttributeError,
-        ValueError,
-        TypeError,
-        ObjectDoesNotExist,
-        DatabaseError,
-        OperationalError,
-    ) as e:
-        if model_name or error_msg:
-            message = error_msg or f"Error getting instances for {model_name}"
-            output.write(f"{message}: {str(e)}")
-        return fallback_value
-
-
 def get_instance_sample(output, model, max_instances=1):
     """
     Get a sample of instances from a model with proper error handling.
@@ -48,22 +16,23 @@ def get_instance_sample(output, model, max_instances=1):
     Returns:
         A queryset of model instances or an empty list if the query fails
     """
-    if max_instances is not None and max_instances > 0:
-
-        def query_func():
+    model_name = f"{model._meta.app_label}.{model._meta.model_name}"
+    
+    try:
+        if max_instances is not None and max_instances > 0:
             return model.objects.all()[:max_instances]
-
-    else:
-
-        def query_func():
+        else:
             return model.objects.all()
-
-    return safe_query(
-        output,
-        query_func,
-        fallback_value=[],
-        model_name=f"{model._meta.app_label}.{model._meta.model_name}",
-    )
+    except (
+        AttributeError,
+        ValueError,
+        TypeError,
+        ObjectDoesNotExist,
+        DatabaseError,
+        OperationalError,
+    ) as e:
+        output.write(f"Error getting instances for {model_name}: {str(e)}")
+        return []
 
 
 def model_has_instances(output, model):
@@ -77,29 +46,20 @@ def model_has_instances(output, model):
     Returns:
         Boolean indicating if the model has any instances
     """
-
-    def query_func():
-        try:
-            return model.objects.exists()
-        except (
-            AttributeError,
-            ValueError,
-            TypeError,
-            ObjectDoesNotExist,
-            DatabaseError,
-            OperationalError,
-        ) as e:
-            output.write(
-                f"Error checking if {model._meta.app_label}.{model._meta.model_name} has instances: {str(e)}"
-            )
-            return False
-
-    return safe_query(
-        output,
-        query_func,
-        fallback_value=False,
-        model_name=f"{model._meta.app_label}.{model._meta.model_name}",
-    )
+    model_name = f"{model._meta.app_label}.{model._meta.model_name}"
+    
+    try:
+        return model.objects.exists()
+    except (
+        AttributeError,
+        ValueError,
+        TypeError,
+        ObjectDoesNotExist,
+        DatabaseError,
+        OperationalError,
+    ) as e:
+        output.write(f"Error checking if {model_name} has instances: {str(e)}")
+        return False
 
 
 def truncate_instance_name(instance_name, max_length=50):
