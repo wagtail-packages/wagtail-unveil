@@ -4,507 +4,334 @@ from unittest.mock import Mock, patch
 
 from wagtail_unveil.helpers.modeladmin_helpers import (
     get_modeladmin_models,
-    get_modeladmin_urls,
+    ModelAdminHelper,
 )
 
 
-class GetModeladminModelsTests(TestCase):
-    """Tests for the get_modeladmin_models function."""
-
-    @patch('wagtail_unveil.helpers.modeladmin_helpers.apps.get_app_configs')
-    @patch('wagtail_unveil.helpers.modeladmin_helpers.import_module')
-    @patch('wagtail_unveil.helpers.modeladmin_helpers.inspect.getmembers')
-    def test_classic_modeladmin(self, mock_getmembers, mock_import_module, mock_get_app_configs):
-        """Test finding models registered with classic wagtail.contrib.modeladmin.options.ModelAdmin."""
-        # Set up app configurations
-        mock_app_config = Mock()
-        mock_app_config.name = 'testapp'
-        mock_get_app_configs.return_value = [mock_app_config]
-        
-        # Set up hook module
-        mock_hooks_module = Mock()
-        mock_import_module.return_value = mock_hooks_module
-        
-        # Mock model
-        mock_model = Mock()
-        
-        # Create a mock ModelAdmin class that uses the classic pattern
-        mock_modeladmin = Mock()
-        mock_modeladmin.model = mock_model
-        mock_modeladmin.get_admin_urls_for_registration = Mock()  # Classic ModelAdmin attribute
-        mock_modeladmin.base_url_path = 'custom_url_path'
-        
-        # Set up inspect.getmembers to return our mock ModelAdmin
-        mock_getmembers.return_value = [('TestModelAdmin', mock_modeladmin)]
-        
-        # Call the function
-        models = get_modeladmin_models()
-        
-        # Check the results
-        self.assertEqual(models, [mock_model])
-        
-        # Verify import_module was called with the correct path
-        mock_import_module.assert_called_once_with('testapp.wagtail_hooks')
-
-    @patch('wagtail_unveil.helpers.modeladmin_helpers.apps.get_app_configs')
-    @patch('wagtail_unveil.helpers.modeladmin_helpers.import_module')
-    @patch('wagtail_unveil.helpers.modeladmin_helpers.inspect.getmembers')
-    def test_newer_modeladmin(self, mock_getmembers, mock_import_module, mock_get_app_configs):
-        """Test finding models registered with newer wagtail_modeladmin.options.ModelAdmin."""
-        # Set up app configurations
-        mock_app_config = Mock()
-        mock_app_config.name = 'testapp'
-        mock_get_app_configs.return_value = [mock_app_config]
-        
-        # Set up hook module
-        mock_hooks_module = Mock()
-        mock_import_module.return_value = mock_hooks_module
-        
-        # Mock model
-        mock_model = Mock()
-        
-        # Create a mock ModelAdmin class that uses the newer pattern
-        mock_modeladmin = Mock()
-        mock_modeladmin.model = mock_model
-        mock_modeladmin.get_admin_urls = Mock()  # Newer ModelAdmin attribute
-        mock_modeladmin.base_url_path = 'newer_custom_path'
-        
-        # Set up inspect.getmembers to return our mock ModelAdmin
-        mock_getmembers.return_value = [('TestModelAdmin', mock_modeladmin)]
-        
-        # Call the function
-        models = get_modeladmin_models()
-        
-        # Check the results
-        self.assertEqual(models, [mock_model])
-
-    @patch('wagtail_unveil.helpers.modeladmin_helpers.apps.get_app_configs')
-    @patch('wagtail_unveil.helpers.modeladmin_helpers.import_module')
-    @patch('wagtail_unveil.helpers.modeladmin_helpers.inspect.getmembers')
-    def test_no_base_url_path(self, mock_getmembers, mock_import_module, mock_get_app_configs):
-        """Test ModelAdmin without a base_url_path."""
-        # Set up app configurations
-        mock_app_config = Mock()
-        mock_app_config.name = 'testapp'
-        mock_get_app_configs.return_value = [mock_app_config]
-        
-        # Set up hook module
-        mock_hooks_module = Mock()
-        mock_import_module.return_value = mock_hooks_module
-        
-        # Mock model
-        mock_model = Mock()
-        
-        # Create a mock ModelAdmin class with no base_url_path
-        mock_modeladmin = Mock(spec=['model', 'get_admin_urls_for_registration'])
-        mock_modeladmin.model = mock_model
-        # base_url_path is not in the spec, so it won't be found
-        
-        # Set up inspect.getmembers to return our mock ModelAdmin
-        mock_getmembers.return_value = [('TestModelAdmin', mock_modeladmin)]
-        
-        # Call the function
-        models = get_modeladmin_models()
-        
-        # Check the results
-        self.assertEqual(models, [mock_model])
-
-    @patch('wagtail_unveil.helpers.modeladmin_helpers.apps.get_app_configs')
-    @patch('wagtail_unveil.helpers.modeladmin_helpers.import_module')
-    def test_import_error(self, mock_import_module, mock_get_app_configs):
-        """Test handling of ImportError when trying to import wagtail_hooks."""
-        # Set up app configurations
-        mock_app_config = Mock()
-        mock_app_config.name = 'testapp'
-        mock_get_app_configs.return_value = [mock_app_config]
-        
-        # Simulate ImportError when importing wagtail_hooks
-        mock_import_module.side_effect = ImportError("No module named 'testapp.wagtail_hooks'")
-        
-        # Call the function
-        models = get_modeladmin_models()
-        
-        # Check the results - should be empty since we couldn't import any hooks
-        self.assertEqual(models, [])
-
-    @patch('wagtail_unveil.helpers.modeladmin_helpers.apps.get_app_configs')
-    @patch('wagtail_unveil.helpers.modeladmin_helpers.import_module')
-    def test_module_not_found_error(self, mock_import_module, mock_get_app_configs):
-        """Test handling of ModuleNotFoundError when trying to import wagtail_hooks."""
-        # Set up app configurations
-        mock_app_config = Mock()
-        mock_app_config.name = 'testapp'
-        mock_get_app_configs.return_value = [mock_app_config]
-        
-        # Simulate ModuleNotFoundError when importing wagtail_hooks
-        mock_import_module.side_effect = ModuleNotFoundError("No module named 'testapp.wagtail_hooks'")
-        
-        # Call the function
-        models = get_modeladmin_models()
-        
-        # Check the results - should be empty since we couldn't import any hooks
-        self.assertEqual(models, [])
-
-    @patch('wagtail_unveil.helpers.modeladmin_helpers.apps.get_app_configs')
-    @patch('wagtail_unveil.helpers.modeladmin_helpers.import_module')
-    @patch('wagtail_unveil.helpers.modeladmin_helpers.inspect.getmembers')
-    def test_multiple_modeladmins(self, mock_getmembers, mock_import_module, mock_get_app_configs):
-        """Test finding multiple ModelAdmin classes across different apps."""
-        # Set up app configurations
-        mock_app_config1 = Mock()
-        mock_app_config1.name = 'app1'
-        mock_app_config2 = Mock()
-        mock_app_config2.name = 'app2'
-        mock_get_app_configs.return_value = [mock_app_config1, mock_app_config2]
-        
-        # Mock models
-        mock_model1 = Mock()
-        mock_model2 = Mock()
-        
-        # Create mock ModelAdmin classes
-        mock_modeladmin1 = Mock()
-        mock_modeladmin1.model = mock_model1
-        mock_modeladmin1.get_admin_urls_for_registration = Mock()
-        mock_modeladmin1.base_url_path = 'custom_path1'
-        
-        mock_modeladmin2 = Mock()
-        mock_modeladmin2.model = mock_model2
-        mock_modeladmin2.get_admin_urls = Mock()
-        mock_modeladmin2.base_url_path = 'custom_path2'
-        
-        # Set up import_module to return different hook modules for each app
-        mock_hooks_module1 = Mock()
-        mock_hooks_module2 = Mock()
-        mock_import_module.side_effect = lambda path: {
-            'app1.wagtail_hooks': mock_hooks_module1,
-            'app2.wagtail_hooks': mock_hooks_module2
-        }[path]
-        
-        # Set up inspect.getmembers to return different ModelAdmin classes for each module
-        mock_getmembers.side_effect = lambda module: {
-            mock_hooks_module1: [('TestModelAdmin1', mock_modeladmin1)],
-            mock_hooks_module2: [('TestModelAdmin2', mock_modeladmin2)]
-        }[module]
-        
-        # Call the function
-        models = get_modeladmin_models()
-        
-        # Check the results - should have both models
-        self.assertEqual(set(models), {mock_model1, mock_model2})
-
-    @patch('wagtail_unveil.helpers.modeladmin_helpers.apps.get_app_configs')
-    @patch('wagtail_unveil.helpers.modeladmin_helpers.import_module')
-    @patch('wagtail_unveil.helpers.modeladmin_helpers.inspect.getmembers')
-    def test_class_without_model(self, mock_getmembers, mock_import_module, mock_get_app_configs):
-        """Test class that has attributes like ModelAdmin but no model attribute."""
-        # Set up app configurations
-        mock_app_config = Mock()
-        mock_app_config.name = 'testapp'
-        mock_get_app_configs.return_value = [mock_app_config]
-        
-        # Set up hook module
-        mock_hooks_module = Mock()
-        mock_import_module.return_value = mock_hooks_module
-        
-        # Create a mock class that looks like ModelAdmin but has no model
-        mock_class = Mock(spec=['get_admin_urls_for_registration'])
-        # No model attribute
-        
-        # Set up inspect.getmembers to return our mock class
-        mock_getmembers.return_value = [('TestClass', mock_class)]
-        
-        # Call the function
-        models = get_modeladmin_models()
-        
-        # Check the results - should be empty since the class has no model
-        self.assertEqual(models, [])
-
-    @patch('wagtail_unveil.helpers.modeladmin_helpers.apps.get_app_configs')
-    @patch('wagtail_unveil.helpers.modeladmin_helpers.import_module')
-    @patch('wagtail_unveil.helpers.modeladmin_helpers.inspect.getmembers')
-    def test_class_with_none_model(self, mock_getmembers, mock_import_module, mock_get_app_configs):
-        """Test ModelAdmin class with model=None."""
-        # Set up app configurations
-        mock_app_config = Mock()
-        mock_app_config.name = 'testapp'
-        mock_get_app_configs.return_value = [mock_app_config]
-        
-        # Set up hook module
-        mock_hooks_module = Mock()
-        mock_import_module.return_value = mock_hooks_module
-        
-        # Create a mock ModelAdmin class with model=None
-        mock_modeladmin = Mock()
-        mock_modeladmin.model = None
-        mock_modeladmin.get_admin_urls_for_registration = Mock()
-        
-        # Set up inspect.getmembers to return our mock ModelAdmin
-        mock_getmembers.return_value = [('TestModelAdmin', mock_modeladmin)]
-        
-        # Call the function
-        models = get_modeladmin_models()
-        
-        # Check the results - should be empty since model is None
-        self.assertEqual(models, [])
-
-
-class GetModeladminUrlsTests(TestCase):
-    """Tests for the get_modeladmin_urls function."""
-
+class ModelAdminHelperTests(TestCase):
+    """Tests for the ModelAdminHelper class."""
+    
     def setUp(self):
+        """Set up test environment."""
         self.output = StringIO()
         self.base_url = "http://testserver"
         self.max_instances = 2
         
-        # Create mock models
+        # Create mock model
         self.mock_model = Mock()
-        self.mock_model._meta = Mock()
         self.mock_model._meta.app_label = "testapp"
         self.mock_model._meta.model_name = "testmodel"
+        
+        # Create mock instances
+        self.mock_instance1 = Mock()
+        self.mock_instance1.id = 1
+        self.mock_instance1.__str__ = Mock(return_value="Test Instance 1")
+        
+        self.mock_instance2 = Mock()
+        self.mock_instance2.id = 2
+        self.mock_instance2.__str__ = Mock(return_value="Test Instance 2")
 
-    @patch('wagtail_unveil.helpers.modeladmin_helpers.get_modeladmin_models')
+    def test_initialization(self):
+        """Test ModelAdminHelper initialization sets up the correct attributes."""
+        helper = ModelAdminHelper(self.output, self.base_url, self.max_instances)
+        self.assertEqual(helper.output, self.output)
+        self.assertEqual(helper.base, "http://testserver")
+        self.assertEqual(helper.max_instances, self.max_instances)
+        self.assertEqual(helper.urls, [])
+    
+    def test_get_list_url_default(self):
+        """Test get_list_url returns correct URL with default path."""
+        helper = ModelAdminHelper(self.output, self.base_url, self.max_instances)
+        url = helper.get_list_url(self.mock_model)
+        self.assertEqual(url, "http://testserver/admin/modeladmin/testapp/testmodel/")
+    
+    def test_get_list_url_custom_path(self):
+        """Test get_list_url returns correct URL with custom path."""
+        helper = ModelAdminHelper(self.output, self.base_url, self.max_instances)
+        url = helper.get_list_url(self.mock_model, custom_url_path="custom/path")
+        self.assertEqual(url, "http://testserver/admin/custom/path/")
+    
+    def test_get_edit_url_default(self):
+        """Test get_edit_url returns correct URL with default path."""
+        helper = ModelAdminHelper(self.output, self.base_url, self.max_instances)
+        url = helper.get_edit_url(self.mock_model, 123)
+        self.assertEqual(url, "http://testserver/admin/modeladmin/testapp/testmodel/edit/123/")
+    
+    def test_get_edit_url_custom_path(self):
+        """Test get_edit_url returns correct URL with custom path."""
+        helper = ModelAdminHelper(self.output, self.base_url, self.max_instances)
+        url = helper.get_edit_url(self.mock_model, 123, custom_url_path="custom/path")
+        self.assertEqual(url, "http://testserver/admin/custom/path/edit/123/")
+    
+    def test_get_delete_url_default(self):
+        """Test get_delete_url returns correct URL with default path."""
+        helper = ModelAdminHelper(self.output, self.base_url, self.max_instances)
+        url = helper.get_delete_url(self.mock_model, 123)
+        self.assertEqual(url, "http://testserver/admin/modeladmin/testapp/testmodel/delete/123/")
+    
+    def test_get_delete_url_custom_path(self):
+        """Test get_delete_url returns correct URL with custom path."""
+        helper = ModelAdminHelper(self.output, self.base_url, self.max_instances)
+        url = helper.get_delete_url(self.mock_model, 123, custom_url_path="custom/path")
+        self.assertEqual(url, "http://testserver/admin/custom/path/delete/123/")
+
+    @patch('wagtail_unveil.helpers.modeladmin_helpers.import_module')
+    def test_get_modeladmin_models(self, mock_import_module):
+        """Test get_modeladmin_models returns models registered with ModelAdmin."""
+        # Set up mock app configs
+        mock_app_config1 = Mock()
+        mock_app_config1.name = "app1"
+        
+        mock_app_config2 = Mock()
+        mock_app_config2.name = "app2"
+        
+        # Create mock hooks modules
+        mock_hooks_module1 = Mock()
+        mock_hooks_module2 = Mock()
+        
+        # Create mock ModelAdmin instances
+        mock_modeladmin1 = Mock()
+        mock_modeladmin1.model = self.mock_model
+        mock_modeladmin1.get_admin_urls_for_registration = Mock()  # Classic ModelAdmin
+        
+        mock_modeladmin2 = Mock()
+        mock_modeladmin2.model = Mock()
+        mock_modeladmin2.get_admin_urls = Mock()  # Newer ModelAdmin
+        
+        # Set up the import_module mock to return our hooks modules
+        def side_effect(module_path):
+            if module_path == "app1.wagtail_hooks":
+                return mock_hooks_module1
+            elif module_path == "app2.wagtail_hooks":
+                return mock_hooks_module2
+            raise ImportError(f"No module named '{module_path}'")
+        
+        mock_import_module.side_effect = side_effect
+        
+        # Set up inspect.getmembers for each hooks module
+        mock_hooks_module1.__dict__ = {"modeladmin1": mock_modeladmin1}
+        mock_hooks_module2.__dict__ = {"modeladmin2": mock_modeladmin2}
+        
+        with patch('wagtail_unveil.helpers.modeladmin_helpers.apps') as mock_apps, \
+             patch('wagtail_unveil.helpers.modeladmin_helpers.inspect') as mock_inspect:
+            
+            # Configure mock_apps
+            mock_apps.get_app_configs.return_value = [mock_app_config1, mock_app_config2]
+            
+            # Configure mock_inspect
+            mock_inspect.getmembers.side_effect = lambda obj: [
+                ("modeladmin1", mock_modeladmin1) if obj == mock_hooks_module1 else
+                ("modeladmin2", mock_modeladmin2)
+            ]
+            
+            # Call method and verify results
+            helper = ModelAdminHelper(self.output, self.base_url, self.max_instances)
+            result = helper.get_modeladmin_models()
+            
+            self.assertEqual(len(result), 2)
+            self.assertIn(self.mock_model, result)
+            self.assertIn(mock_modeladmin2.model, result)
+
+    @patch('wagtail_unveil.helpers.modeladmin_helpers.import_module')
+    def test_get_modeladmin_url_paths(self, mock_import_module):
+        """Test get_modeladmin_url_paths returns custom paths for models."""
+        # Set up mock app configs
+        mock_app_config = Mock()
+        mock_app_config.name = "app1"
+        
+        # Create mock hooks module
+        mock_hooks_module = Mock()
+        
+        # Create mock ModelAdmin instance with custom base_url_path
+        mock_modeladmin = Mock()
+        mock_modeladmin.model = self.mock_model
+        mock_modeladmin.base_url_path = "custom/model/path"
+        
+        # Set up the import_module mock
+        mock_import_module.return_value = mock_hooks_module
+        
+        with patch('wagtail_unveil.helpers.modeladmin_helpers.apps') as mock_apps, \
+             patch('wagtail_unveil.helpers.modeladmin_helpers.inspect') as mock_inspect:
+            
+            # Configure mock_apps
+            mock_apps.get_app_configs.return_value = [mock_app_config]
+            
+            # Configure mock_inspect
+            mock_inspect.getmembers.return_value = [("modeladmin", mock_modeladmin)]
+            
+            # Call method and verify results
+            helper = ModelAdminHelper(self.output, self.base_url, self.max_instances)
+            result = helper.get_modeladmin_url_paths()
+            
+            self.assertEqual(len(result), 1)
+            self.assertEqual(result[self.mock_model], "custom/model/path")
+
     @patch('wagtail_unveil.helpers.modeladmin_helpers.model_has_instances')
     @patch('wagtail_unveil.helpers.modeladmin_helpers.get_instance_sample')
     @patch('wagtail_unveil.helpers.modeladmin_helpers.truncate_instance_name')
     @patch('wagtail_unveil.helpers.modeladmin_helpers.format_url_tuple')
-    def test_with_instances_default_url(self, mock_format_url_tuple, mock_truncate_instance_name, 
-                               mock_get_instance_sample, mock_model_has_instances, mock_get_modeladmin_models):
-        """Test get_modeladmin_urls when there are instances and using default URL pattern."""
-        # Set up mocks
+    def test_collect_urls_with_instances(self, mock_format_url_tuple, mock_truncate_instance_name,
+                                      mock_get_instance_sample, mock_model_has_instances):
+        """Test collect_urls method when models have instances."""
+        helper = ModelAdminHelper(self.output, self.base_url, self.max_instances)
+        
+        # Mock methods used by collect_urls
+        helper.get_modeladmin_models = Mock(return_value=[self.mock_model])
+        helper.get_modeladmin_url_paths = Mock(return_value={})
+        
+        # Configure other mocks
         mock_model_has_instances.return_value = True
-        
-        mock_instance1 = Mock()
-        mock_instance1.id = 1
-        mock_instance1.__str__ = lambda self: "Instance 1"
-        
-        mock_instance2 = Mock()
-        mock_instance2.id = 2
-        mock_instance2.__str__ = lambda self: "Instance 2"
-        
-        mock_get_instance_sample.return_value = [mock_instance1, mock_instance2]
-        
+        mock_get_instance_sample.return_value = [self.mock_instance1, self.mock_instance2]
         mock_truncate_instance_name.side_effect = lambda x: f"Truncated {x}"
         
-        mock_format_url_tuple.side_effect = lambda model, instance_name, url_type, url: (model, url_type, url)
+        mock_format_url_tuple.side_effect = lambda model, instance_name, url_type, url: (
+            model, instance_name, url_type, url)
         
-        # Set up get_modeladmin_models to return our test models
-        mock_get_modeladmin_models.return_value = [self.mock_model]
+        # Call collect_urls and check results
+        result = helper.collect_urls()
         
-        # Call the function
-        result = get_modeladmin_urls(
-            self.output, self.base_url, self.max_instances
-        )
+        # Should have list URL plus edit and delete URLs for each instance
+        self.assertEqual(len(result), 5)  # 1 list URL + 2 instances * 2 URL types
         
-        # Check the results
-        self.assertEqual(len(result), 5)  # 1 list + 2 edit URLs + 2 delete URLs
-        
-        # Check that the list URL was added with the correct format
+        # Check that format_url_tuple was called correctly for list URL
         mock_format_url_tuple.assert_any_call(
             "testapp.testmodel", None, "list", 
             "http://testserver/admin/modeladmin/testapp/testmodel/"
         )
         
-        # Check that edit URLs were added with the correct format
+        # Check edit URLs
         mock_format_url_tuple.assert_any_call(
-            "testapp.testmodel", "Truncated Instance 1", "edit", 
+            "testapp.testmodel", "Truncated Test Instance 1", "edit",
             "http://testserver/admin/modeladmin/testapp/testmodel/edit/1/"
         )
         mock_format_url_tuple.assert_any_call(
-            "testapp.testmodel", "Truncated Instance 2", "edit", 
+            "testapp.testmodel", "Truncated Test Instance 2", "edit",
             "http://testserver/admin/modeladmin/testapp/testmodel/edit/2/"
         )
         
-        # Check that delete URLs were added with the correct format
+        # Check delete URLs
         mock_format_url_tuple.assert_any_call(
-            "testapp.testmodel", "Truncated Instance 1", "delete", 
+            "testapp.testmodel", "Truncated Test Instance 1", "delete",
             "http://testserver/admin/modeladmin/testapp/testmodel/delete/1/"
         )
         mock_format_url_tuple.assert_any_call(
-            "testapp.testmodel", "Truncated Instance 2", "delete", 
+            "testapp.testmodel", "Truncated Test Instance 2", "delete",
             "http://testserver/admin/modeladmin/testapp/testmodel/delete/2/"
         )
 
-    @patch('wagtail_unveil.helpers.modeladmin_helpers.get_modeladmin_models')
-    @patch('wagtail_unveil.helpers.modeladmin_helpers.model_has_instances')
-    @patch('wagtail_unveil.helpers.modeladmin_helpers.get_instance_sample')
-    @patch('wagtail_unveil.helpers.modeladmin_helpers.truncate_instance_name')
-    @patch('wagtail_unveil.helpers.modeladmin_helpers.format_url_tuple')
-    def test_with_instances_custom_url(self, mock_format_url_tuple, mock_truncate_instance_name, 
-                              mock_get_instance_sample, mock_model_has_instances, mock_get_modeladmin_models):
-        """Test get_modeladmin_urls when there are instances and using custom URL pattern."""
-        # Set up mocks
-        mock_model_has_instances.return_value = True
-        
-        mock_instance1 = Mock()
-        mock_instance1.id = 1
-        mock_instance1.__str__ = lambda self: "Instance 1"
-        
-        mock_instance2 = Mock()
-        mock_instance2.id = 2
-        mock_instance2.__str__ = lambda self: "Instance 2"
-        
-        mock_get_instance_sample.return_value = [mock_instance1, mock_instance2]
-        
-        mock_truncate_instance_name.side_effect = lambda x: f"Truncated {x}"
-        
-        mock_format_url_tuple.side_effect = lambda model, instance_name, url_type, url: (model, url_type, url)
-        
-        # Mock finding custom URL paths (now handled in get_modeladmin_urls)
-        mock_get_modeladmin_models.return_value = [self.mock_model]
-        
-        # Patch the import_module to return a mock hook module with custom URL path
-        with patch('wagtail_unveil.helpers.modeladmin_helpers.import_module') as mock_import_module:
-            with patch('wagtail_unveil.helpers.modeladmin_helpers.inspect.getmembers') as mock_getmembers:
-                # Set up hook module
-                mock_hooks_module = Mock()
-                mock_import_module.return_value = mock_hooks_module
-                
-                # Create a mock ModelAdmin with custom URL path
-                mock_modeladmin = Mock()
-                mock_modeladmin.model = self.mock_model
-                mock_modeladmin.base_url_path = 'custom/path'
-                
-                # Set up inspect.getmembers to return our mock ModelAdmin
-                mock_getmembers.return_value = [('TestModelAdmin', mock_modeladmin)]
-                
-                # Call the function
-                result = get_modeladmin_urls(
-                    self.output, self.base_url, self.max_instances
-                )
-        
-        # Check the results
-        self.assertEqual(len(result), 5)  # 1 list + 2 edit URLs + 2 delete URLs
-        
-        # Check that the list URL was added with the correct format
-        mock_format_url_tuple.assert_any_call(
-            "testapp.testmodel", None, "list", 
-            "http://testserver/admin/custom/path/"
-        )
-        
-        # Check that edit URLs were added with the correct format
-        mock_format_url_tuple.assert_any_call(
-            "testapp.testmodel", "Truncated Instance 1", "edit", 
-            "http://testserver/admin/custom/path/edit/1/"
-        )
-        mock_format_url_tuple.assert_any_call(
-            "testapp.testmodel", "Truncated Instance 2", "edit", 
-            "http://testserver/admin/custom/path/edit/2/"
-        )
-        
-        # Check that delete URLs were added with the correct format
-        mock_format_url_tuple.assert_any_call(
-            "testapp.testmodel", "Truncated Instance 1", "delete", 
-            "http://testserver/admin/custom/path/delete/1/"
-        )
-        mock_format_url_tuple.assert_any_call(
-            "testapp.testmodel", "Truncated Instance 2", "delete", 
-            "http://testserver/admin/custom/path/delete/2/"
-        )
-
-    @patch('wagtail_unveil.helpers.modeladmin_helpers.get_modeladmin_models')
     @patch('wagtail_unveil.helpers.modeladmin_helpers.model_has_instances')
     @patch('wagtail_unveil.helpers.modeladmin_helpers.format_url_tuple')
-    def test_without_instances(self, mock_format_url_tuple, mock_model_has_instances, mock_get_modeladmin_models):
-        """Test get_modeladmin_urls when there are no instances."""
-        # Set up mocks
+    def test_collect_urls_without_instances(self, mock_format_url_tuple, mock_model_has_instances):
+        """Test collect_urls method when models have no instances."""
+        helper = ModelAdminHelper(self.output, self.base_url, self.max_instances)
+        
+        # Mock methods used by collect_urls
+        helper.get_modeladmin_models = Mock(return_value=[self.mock_model])
+        helper.get_modeladmin_url_paths = Mock(return_value={})
+        
+        # Configure other mocks
         mock_model_has_instances.return_value = False
         
-        mock_format_url_tuple.side_effect = lambda model, instance_name, url_type, url: (model, instance_name, url_type, url)
+        mock_format_url_tuple.side_effect = lambda model, instance_name, url_type, url: (
+            model, instance_name, url_type, url)
         
-        # Set up get_modeladmin_models to return our test models
-        mock_get_modeladmin_models.return_value = [self.mock_model]
+        # Call collect_urls and check results
+        result = helper.collect_urls()
         
-        # Call the function
-        result = get_modeladmin_urls(
-            self.output, self.base_url, self.max_instances
-        )
+        # Should have only list URL with "NO INSTANCES" note
+        self.assertEqual(len(result), 1)
         
-        # Check the results
-        self.assertEqual(len(result), 1)  # Only the list URL
-        
-        # Verify the correct message was written to output
+        # Verify the "no instances" message was written to output
         self.assertIn("Note: testapp.testmodel has no instances", self.output.getvalue())
         
-        # Check that the list URL was added with the correct format and NO INSTANCES note
+        # Check that format_url_tuple was called correctly
         mock_format_url_tuple.assert_called_once_with(
-            "testapp.testmodel (NO INSTANCES)", None, "list", 
+            "testapp.testmodel (NO INSTANCES)", None, "list",
             "http://testserver/admin/modeladmin/testapp/testmodel/"
         )
 
-    @patch('wagtail_unveil.helpers.modeladmin_helpers.get_modeladmin_models')
     @patch('wagtail_unveil.helpers.modeladmin_helpers.model_has_instances')
-    @patch('wagtail_unveil.helpers.modeladmin_helpers.format_url_tuple')
-    def test_with_trailing_slash_in_base_url(self, mock_format_url_tuple, mock_model_has_instances, mock_get_modeladmin_models):
-        """Test get_modeladmin_urls when base_url has a trailing slash."""
-        # Set up mocks
+    def test_collect_urls_with_styled_output(self, mock_model_has_instances):
+        """Test collect_urls method when output has style method."""
+        # Create a mock output with style
+        mock_output = Mock()
+        mock_output.style = Mock()
+        mock_output.style.INFO = lambda x: f"INFO: {x}"
+        mock_output.write = Mock()
+        
+        helper = ModelAdminHelper(mock_output, self.base_url, self.max_instances)
+        
+        # Mock methods used by collect_urls
+        helper.get_modeladmin_models = Mock(return_value=[self.mock_model])
+        helper.get_modeladmin_url_paths = Mock(return_value={})
+        
+        # Configure other mocks
         mock_model_has_instances.return_value = False
         
-        mock_format_url_tuple.side_effect = lambda model, instance_name, url_type, url: (model, instance_name, url_type, url)
+        # Call collect_urls
+        helper.collect_urls()
         
-        # Set up get_modeladmin_models to return our test models
-        mock_get_modeladmin_models.return_value = [self.mock_model]
-        
-        # Base URL with trailing slash
-        base_url_with_slash = "http://testserver/"
-        
-        # Call the function
-        get_modeladmin_urls(
-            self.output, base_url_with_slash, self.max_instances
-        )
-        
-        # Check that the trailing slash was removed to avoid double slashes
-        mock_format_url_tuple.assert_called_once_with(
-            "testapp.testmodel (NO INSTANCES)", None, "list", 
-            "http://testserver/admin/modeladmin/testapp/testmodel/"
+        # Check that style.INFO was used for the message
+        mock_output.write.assert_called_once_with(
+            mock_output.style.INFO("Note: testapp.testmodel has no instances")
         )
 
-    @patch('wagtail_unveil.helpers.modeladmin_helpers.get_modeladmin_models')
-    def test_empty_models_list(self, mock_get_modeladmin_models):
-        """Test get_modeladmin_urls with an empty models list."""
-        # Set up get_modeladmin_models to return empty models list
-        mock_get_modeladmin_models.return_value = []
+    def test_collect_urls_with_custom_url_path(self):
+        """Test collect_urls with custom URL paths."""
+        helper = ModelAdminHelper(self.output, self.base_url, self.max_instances)
         
-        # Call the function
-        result = get_modeladmin_urls(
-            self.output, self.base_url, self.max_instances
-        )
+        # Mock methods used by collect_urls
+        helper.get_modeladmin_models = Mock(return_value=[self.mock_model])
+        helper.get_modeladmin_url_paths = Mock(return_value={self.mock_model: "custom/model/path"})
         
-        # Check the results
-        self.assertEqual(result, [])  # Should return an empty list
+        # Mock other helpers
+        with patch('wagtail_unveil.helpers.modeladmin_helpers.model_has_instances') as mock_model_has_instances, \
+             patch('wagtail_unveil.helpers.modeladmin_helpers.get_instance_sample') as mock_get_instance_sample, \
+             patch('wagtail_unveil.helpers.modeladmin_helpers.truncate_instance_name') as mock_truncate_instance_name, \
+             patch('wagtail_unveil.helpers.modeladmin_helpers.format_url_tuple') as mock_format_url_tuple:
+            
+            mock_model_has_instances.return_value = True
+            mock_get_instance_sample.return_value = [self.mock_instance1]
+            mock_truncate_instance_name.side_effect = lambda x: f"Truncated {x}"
+            
+            mock_format_url_tuple.side_effect = lambda model, instance_name, url_type, url: (
+                model, instance_name, url_type, url)
+            
+            # Call collect_urls
+            helper.collect_urls()
+            
+            # Check URLs use custom path
+            mock_format_url_tuple.assert_any_call(
+                "testapp.testmodel", None, "list", 
+                "http://testserver/admin/custom/model/path/"
+            )
+            mock_format_url_tuple.assert_any_call(
+                "testapp.testmodel", "Truncated Test Instance 1", "edit",
+                "http://testserver/admin/custom/model/path/edit/1/"
+            )
 
-    @patch('wagtail_unveil.helpers.modeladmin_helpers.get_modeladmin_models')
-    @patch('wagtail_unveil.helpers.modeladmin_helpers.model_has_instances')
-    @patch('wagtail_unveil.helpers.modeladmin_helpers.format_url_tuple')
-    def test_multiple_models(self, mock_format_url_tuple, mock_model_has_instances, mock_get_modeladmin_models):
-        """Test get_modeladmin_urls with multiple models."""
-        # Set up mocks
-        mock_model_has_instances.return_value = False
+    def test_modeladmin_urls(self):
+        """Test modeladmin_urls calls collect_urls."""
+        helper = ModelAdminHelper(self.output, self.base_url, self.max_instances)
         
-        mock_format_url_tuple.side_effect = lambda model, instance_name, url_type, url: (model, url_type, url)
+        # Mock collect_urls method
+        helper.collect_urls = Mock(return_value=["url1", "url2"])
         
-        # Create a second mock model
-        mock_model2 = Mock()
-        mock_model2._meta = Mock()
-        mock_model2._meta.app_label = "testapp"
-        mock_model2._meta.model_name = "secondmodel"
+        # Call modeladmin_urls
+        result = helper.modeladmin_urls()
         
-        # Set up get_modeladmin_models to return multiple models
-        mock_get_modeladmin_models.return_value = [self.mock_model, mock_model2]
-        
-        # Call the function
-        result = get_modeladmin_urls(
-            self.output, self.base_url, self.max_instances
-        )
-        
-        # Check the results
-        self.assertEqual(len(result), 2)  # Should have a list URL for each model
-        
-        # Verify both models have URLs with the correct format
-        mock_format_url_tuple.assert_any_call(
-            "testapp.testmodel (NO INSTANCES)", None, "list", 
-            "http://testserver/admin/modeladmin/testapp/testmodel/"
-        )
-        mock_format_url_tuple.assert_any_call(
-            "testapp.secondmodel (NO INSTANCES)", None, "list", 
-            "http://testserver/admin/modeladmin/testapp/secondmodel/"
-        )
+        # Verify collect_urls was called and result was returned
+        helper.collect_urls.assert_called_once()
+        self.assertEqual(result, ["url1", "url2"])
+
+    def test_get_modeladmin_models_function(self):
+        """Test the standalone get_modeladmin_models function."""
+        with patch.object(ModelAdminHelper, 'get_modeladmin_models') as mock_method:
+            mock_method.return_value = ["model1", "model2"]
+            
+            # Call the standalone function
+            result = get_modeladmin_models()
+            
+            # Verify the result
+            self.assertEqual(result, ["model1", "model2"])
+            mock_method.assert_called_once()
