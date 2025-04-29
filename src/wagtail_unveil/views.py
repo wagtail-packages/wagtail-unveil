@@ -7,7 +7,7 @@ from django.conf import settings
 from .helpers.page_helpers import PageHelper
 from .helpers.snippet_helpers import SnippetHelper
 from .helpers.modelviewset_helpers import ModelViewSetHelper
-from .helpers.modeladmin_helpers import ModelAdminHelper
+# from .helpers.modeladmin_helpers import ModelAdminHelper
 from .helpers.settings_helpers import get_settings_admin_urls
 from .helpers.image_helpers import ImageHelper
 from .helpers.document_helpers import DocumentHelper
@@ -94,12 +94,12 @@ class UnveilReportView(ReportView):
             all_urls.append(UrlEntry(counter, display_name, url_type, url))
             counter += 1
         
-        # Get modeladmin models and collect modeladmin URLs
-        modeladmin_helper = ModelAdminHelper(output, base_url, max_instances)
-        modeladmin_urls = modeladmin_helper.modeladmin_urls()
-        for display_name, instance_name, url_type, url in modeladmin_urls:
-            all_urls.append(UrlEntry(counter, display_name, url_type, url))
-            counter += 1
+        # # Get modeladmin models and collect modeladmin URLs
+        # modeladmin_helper = ModelAdminHelper(output, base_url, max_instances)
+        # modeladmin_urls = modeladmin_helper.modeladmin_urls()
+        # for display_name, instance_name, url_type, url in modeladmin_urls:
+        #     all_urls.append(UrlEntry(counter, display_name, url_type, url))
+        #     counter += 1
         
         # Collect settings URLs
         settings_urls = get_settings_admin_urls(output, base_url)
