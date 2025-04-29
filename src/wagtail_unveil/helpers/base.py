@@ -187,21 +187,26 @@ class BaseHelper:
     
     def add_url_for_model_with_no_instances(self, model_name: str, list_url: str) -> None:
         """Add a list URL for a model with no instances"""
-        self.urls.append(
-            format_url_tuple(f"{model_name} (NO INSTANCES)", None, "list", list_url)
-        )
+        display_name = f"{model_name} (NO INSTANCES)"
+        self.urls.append((display_name, None, "list", list_url))
     
     def add_list_url(self, model_name: str, list_url: str) -> None:
         """Add a list URL for a model"""
-        self.urls.append(format_url_tuple(model_name, None, "list", list_url))
+        self.urls.append((model_name, None, "list", list_url))
     
     def add_edit_url(self, model_name: str, instance_name: str, edit_url: str) -> None:
         """Add an edit URL for a model instance"""
-        self.urls.append(format_url_tuple(model_name, instance_name, "edit", edit_url))
+        display_name = model_name
+        if instance_name:
+            display_name = f"{model_name} ({instance_name})"
+        self.urls.append((display_name, instance_name, "edit", edit_url))
     
     def add_delete_url(self, model_name: str, instance_name: str, delete_url: str) -> None:
         """Add a delete URL for a model instance"""
-        self.urls.append(format_url_tuple(model_name, instance_name, "delete", delete_url))
+        display_name = model_name
+        if instance_name:
+            display_name = f"{model_name} ({instance_name})"
+        self.urls.append((display_name, instance_name, "delete", delete_url))
     
     def collect_urls(self) -> List[Tuple[str, Optional[str], str, str]]:
         """
