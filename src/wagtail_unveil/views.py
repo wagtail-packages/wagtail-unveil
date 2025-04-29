@@ -4,11 +4,12 @@ from io import StringIO
 from wagtail.admin.widgets.button import HeaderButton
 from django.conf import settings
 
-from .helpers.page_helpers import get_page_urls
-from .helpers.snippet_helpers import get_snippet_urls, get_modelviewset_urls
-from .helpers.modeladmin_helpers import get_modeladmin_urls
+from .helpers.page_helpers import PageHelper
+from .helpers.snippet_helpers import SnippetHelper
+from .helpers.modelviewset_helpers import ModelViewSetHelper
 from .helpers.settings_helpers import get_settings_admin_urls
-from .helpers.media_helpers import get_image_admin_urls, get_document_admin_urls
+from .helpers.image_helpers import ImageHelper
+from .helpers.document_helpers import DocumentHelper
 
 
 class UnveilReportView(ReportView):
@@ -72,45 +73,44 @@ class UnveilReportView(ReportView):
         base_url = "http://localhost:8000"  # Default base URL
         
         # Collect page URLs
-        page_urls = get_page_urls(output, base_url, max_instances)
-        for model_name, url_type, url in page_urls:
-            all_urls.append(UrlEntry(counter, model_name, url_type, url))
+        page_helper = PageHelper(output, base_url, max_instances)
+        page_urls = page_helper.page_urls()
+        for display_name, instance_name, url_type, url in page_urls:
+            all_urls.append(UrlEntry(counter, display_name, url_type, url))
             counter += 1
         
         # Get snippet models and collect snippet URLs
-        snippet_urls = get_snippet_urls(output, base_url, max_instances)
-        for model_name, url_type, url in snippet_urls:
-            all_urls.append(UrlEntry(counter, model_name, url_type, url))
+        snippet_helper = SnippetHelper(output, base_url, max_instances)
+        snippet_urls = snippet_helper.snippet_urls()
+        for display_name, instance_name, url_type, url in snippet_urls:
+            all_urls.append(UrlEntry(counter, display_name, url_type, url))
             counter += 1
         
-        # Create an empty dictionary for URL paths since we no longer get it from get_modelviewset_models()
-        modelviewset_urls = get_modelviewset_urls(output, base_url, max_instances)
-        for model_name, url_type, url in modelviewset_urls:
-            all_urls.append(UrlEntry(counter, model_name, url_type, url))
+        # Get ModelViewSet URLs using the ModelViewSetHelper class
+        modelviewset_helper = ModelViewSetHelper(output, base_url, max_instances)
+        modelviewset_urls = modelviewset_helper.modelviewset_urls()
+        for display_name, instance_name, url_type, url in modelviewset_urls:
+            all_urls.append(UrlEntry(counter, display_name, url_type, url))
             counter += 1
-        
-        # Get modeladmin models and collect modeladmin URLs
-        modeladmin_urls = get_modeladmin_urls(output, base_url, max_instances)
-        for model_name, url_type, url in modeladmin_urls:
-            all_urls.append(UrlEntry(counter, model_name, url_type, url))
-            counter += 1
-        
+
         # Collect settings URLs
         settings_urls = get_settings_admin_urls(output, base_url)
-        for model_name, url_type, url in settings_urls:
-            all_urls.append(UrlEntry(counter, model_name, url_type, url))
+        for display_name, instance_name, url_type, url in settings_urls:
+            all_urls.append(UrlEntry(counter, display_name, url_type, url))
             counter += 1
         
         # Get image URLs
-        image_urls = get_image_admin_urls(output, base_url, max_instances)
-        for model_name, url_type, url in image_urls:
-            all_urls.append(UrlEntry(counter, model_name, url_type, url))
+        image_helper = ImageHelper(output, base_url, max_instances)
+        image_urls = image_helper.image_urls()
+        for display_name, instance_name, url_type, url in image_urls:
+            all_urls.append(UrlEntry(counter, display_name, url_type, url))
             counter += 1
             
         # Get document URLs
-        document_urls = get_document_admin_urls(output, base_url, max_instances)
-        for model_name, url_type, url in document_urls:
-            all_urls.append(UrlEntry(counter, model_name, url_type, url))
+        document_helper = DocumentHelper(output, base_url, max_instances)
+        document_urls = document_helper.document_urls()
+        for display_name, instance_name, url_type, url in document_urls:
+            all_urls.append(UrlEntry(counter, display_name, url_type, url))
             counter += 1
             
         return all_urls

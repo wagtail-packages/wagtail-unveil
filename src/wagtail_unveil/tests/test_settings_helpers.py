@@ -24,14 +24,15 @@ class SettingsHelpersTests(TestCase):
         
         # Verify the format of the entries
         for url_entry in urls:
-            # Each entry should be a tuple of (name, type, url)
-            self.assertEqual(len(url_entry), 3)
+            # Each entry should be a tuple of (name, icon, type, url)
+            self.assertEqual(len(url_entry), 4)
             self.assertIsInstance(url_entry[0], str)  # name
-            self.assertIsInstance(url_entry[1], str)  # type (list, edit, delete, etc.)
-            self.assertIsInstance(url_entry[2], str)  # URL
+            # url_entry[1] is icon which can be None
+            self.assertIsInstance(url_entry[2], str)  # type (list, edit, delete, etc.)
+            self.assertIsInstance(url_entry[3], str)  # URL
             
             # URL should start with the base_url
-            self.assertTrue(url_entry[2].startswith(self.base_url))
+            self.assertTrue(url_entry[3].startswith(self.base_url))
 
     def test_get_settings_admin_urls_with_trailing_slash(self):
         """Test that get_settings_admin_urls handles base URLs with trailing slashes correctly."""
@@ -39,7 +40,7 @@ class SettingsHelpersTests(TestCase):
         
         # Check that URLs don't have double slashes
         for url_entry in urls:
-            self.assertNotIn("//admin", url_entry[2])
+            self.assertNotIn("//admin", url_entry[3])
             
     def test_settings_sections_included(self):
         """Test that common settings sections are included in the URLs."""
@@ -59,7 +60,7 @@ class SettingsHelpersTests(TestCase):
         urls = get_settings_admin_urls(self.output, self.base_url)
         
         # Extract URL types for easier testing
-        url_types = [url[1] for url in urls]
+        url_types = [url[2] for url in urls]
         
         # Verify that we have list, edit, and delete URL types
         # Some entities might not have instances, so we check for these types existing in general
@@ -75,7 +76,7 @@ class SettingsHelpersTests(TestCase):
         """Test that delete URLs follow correct patterns."""
         urls = get_settings_admin_urls(self.output, self.base_url)
         
-        for name, type_, url in urls:
+        for name, icon, type_, url in urls:
             if type_ == "delete":
                 # Most delete URLs should end with /delete/
                 # Exception: Workflows and workflow tasks use /disable/ pattern
