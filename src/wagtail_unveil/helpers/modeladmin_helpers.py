@@ -97,54 +97,71 @@ class ModelAdminHelper(BaseHelper):
     
     def collect_urls(self) -> List[Tuple[str, Optional[str], str, str]]:
         """Collect all modeladmin URLs"""
-        # Get modeladmin models
-        modeladmin_models = self.get_modeladmin_models()
-        
-        # Dictionary to store custom base URL paths for models
-        modeladmin_url_paths = self.get_modeladmin_url_paths()
-        
-        for model in modeladmin_models:
-            model_name = self.get_model_name(model)
+        try:
+            # Get modeladmin models
+            modeladmin_models = self.get_modeladmin_models()
+            
+            # Dictionary to store custom base URL paths for models
+            modeladmin_url_paths = self.get_modeladmin_url_paths()
+            
+            for model in modeladmin_models:
+                model_name = self.get_model_name(model)
 
-            # Check if model has any instances
-            has_instances = model_has_instances(self.output, model)
+                # Check if model has any instances
+                has_instances = model_has_instances(self.output, model)
 
-            # Check if this model has a custom base URL path
-            custom_url_path = modeladmin_url_paths.get(model)
+                # Check if this model has a custom base URL path
+                custom_url_path = modeladmin_url_paths.get(model)
 
-            list_url = self.get_list_url(model, custom_url_path)
+                list_url = self.get_list_url(model, custom_url_path)
 
-            if has_instances:
-                self.add_list_url(model_name, list_url)
+                if has_instances:
+                    self.add_list_url(model_name, list_url)
 
-                # Add edit URLs for actual instances
-                instances = get_instance_sample(self.output, model, self.max_instances)
-                for instance in instances:
-                    instance_name = truncate_instance_name(str(instance))
-
-                    edit_url = self.get_edit_url(model, instance.id, custom_url_path)
-                    self.add_edit_url(model_name, instance_name, edit_url)
+                    # Add edit URLs for actual instances
+                    instances = get_instance_sample(self.output, model, self.max_instances)
                     
-                    # Add delete URL for each instance
-                    delete_url = self.get_delete_url(model, instance.id, custom_url_path)
-                    self.add_delete_url(model_name, instance_name, delete_url)
+                    # Handle potential coroutine
+                    if hasattr(instances, '__await__'):
+                        if hasattr(self.output, "style"):
+                            self.output.write(self.output.style.WARNING(
+                                f"Warning: Async result detected for {model_name}. Skipping instance URLs."
+                            ))
+                        else:
+                            self.output.write(f"Warning: Async result detected for {model_name}. Skipping instance URLs.")
+                        continue
+                        
+                    for instance in instances:
+                        instance_name = truncate_instance_name(str(instance))
+
+                        edit_url = self.get_edit_url(model, instance.id, custom_url_path)
+                        self.add_edit_url(model_name, instance_name, edit_url)
+                        
+                        # Add delete URL for each instance
+                        delete_url = self.get_delete_url(model, instance.id, custom_url_path)
+                        self.add_delete_url(model_name, instance_name, delete_url)
+                else:
+                    # For models with no instances, always show the list URL with a note
+                    self.write_no_instances_message(model_name)
+                    self.add_url_for_model_with_no_instances(model_name, list_url)
+        except TypeError as e:
+            if "coroutine" in str(e):
+                if hasattr(self.output, "style"):
+                    self.output.write(self.output.style.ERROR(
+                        f"Error: Encountered a coroutine object that cannot be iterated. "
+                        f"This may be caused by an async function that was not properly awaited. {str(e)}"
+                    ))
+                else:
+                    self.output.write(
+                        f"Error: Encountered a coroutine object that cannot be iterated. "
+                        f"This may be caused by an async function that was not properly awaited. {str(e)}"
+                    )
             else:
-                # For models with no instances, always show the list URL with a note
-                self.write_no_instances_message(model_name)
-                self.add_url_for_model_with_no_instances(model_name, list_url)
+                # Re-raise other TypeErrors
+                raise
         
         return self.urls
     
     def modeladmin_urls(self) -> List[Tuple[str, Optional[str], str, str]]:
         """Return all modeladmin URLs"""
         return self.collect_urls()
-
-
-# A legacy function to get modeladmin models
-# This is a wrapper around the ModelAdminHelper class
-def get_modeladmin_models():
-    """
-    Find models registered with ModelAdmin
-    """
-    helper = ModelAdminHelper(None, "", 0)
-    return helper.get_modeladmin_models()

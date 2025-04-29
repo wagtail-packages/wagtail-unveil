@@ -2,10 +2,7 @@ from django.test import TestCase
 from io import StringIO
 from unittest.mock import Mock, patch
 
-from wagtail_unveil.helpers.modeladmin_helpers import (
-    get_modeladmin_models,
-    ModelAdminHelper,
-)
+from wagtail_unveil.helpers.modeladmin_helpers import ModelAdminHelper
 
 
 class ModelAdminHelperTests(TestCase):
@@ -321,15 +318,3 @@ class ModelAdminHelperTests(TestCase):
         # Verify collect_urls was called and result was returned
         helper.collect_urls.assert_called_once()
         self.assertEqual(result, ["url1", "url2"])
-
-    def test_get_modeladmin_models_function(self):
-        """Test the standalone get_modeladmin_models function."""
-        with patch.object(ModelAdminHelper, 'get_modeladmin_models') as mock_method:
-            mock_method.return_value = ["model1", "model2"]
-            
-            # Call the standalone function
-            result = get_modeladmin_models()
-            
-            # Verify the result
-            self.assertEqual(result, ["model1", "model2"])
-            mock_method.assert_called_once()
