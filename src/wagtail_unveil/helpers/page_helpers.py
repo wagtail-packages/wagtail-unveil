@@ -1,76 +1,114 @@
-from wagtail.models import get_page_models as get_page_models_wagtail
+from dataclasses import dataclass, field
+from typing import Any, List, Optional, Tuple
 
-from .base import format_url_tuple, get_instance_sample, model_has_instances
+from wagtail.models import get_page_models
+
+from .base import (
+    format_url_tuple,
+    get_instance_sample,
+    model_has_instances,
+    truncate_instance_name,
+)
 
 
-def get_page_models():
+@dataclass
+class PageHelper:
     """
-    This currently returns the core get_page_models function from Wagtail.
-    Not sure yet if this need to be overridden in some way.
+    A dataclass that encapsulates page helper functionality.
+    Developers can inherit from this class to extend its functionality.
     """
-    return get_page_models_wagtail()
-
-
-def get_page_urls(output, base_url, max_instances):
-    """Get admin URLs for page models"""
-    urls = []
-    # Strip trailing slash from base_url to avoid double slashes
-    base = base_url.rstrip("/")
-
-    for model in get_page_models():
-        model_name = f"{model._meta.app_label}.{model._meta.model_name}"
-
-        # Check if model has any instances
-        has_instances = model_has_instances(output, model)
-
-        # Get instances using our safe query helper
-        instances = (
-            get_instance_sample(output, model, max_instances) if has_instances else []
-        )
-
-        if instances:
-            # Add edit and frontend URLs for each instance
-            for instance in instances:
-                # Add admin edit URL
-                edit_url = f"{base}/admin/pages/{instance.id}/edit/"
-                urls.append(
-                    format_url_tuple(model_name, instance.title, "edit", edit_url)
-                )
-
-                # Add delete URL for each page
-                delete_url = f"{base}/admin/pages/{instance.id}/delete/"
-                urls.append(
-                    format_url_tuple(model_name, instance.title, "delete", delete_url)
-                )
-
-                # Add frontend URL if the page has one
-                if hasattr(instance, "url") and instance.url:
-                    # Check if already a full URL
-                    if instance.url.startswith("http"):
-                        frontend_url = instance.url
-                    else:
-                        # Ensure clean joining of URLs
-                        page_url = instance.url
-                        if page_url.startswith("/"):
-                            frontend_url = f"{base}{page_url}"
-                        else:
-                            frontend_url = f"{base}/{page_url}"
-
-                    urls.append(
-                        format_url_tuple(
-                            model_name, instance.title, "frontend", frontend_url
-                        )
-                    )
+    output: Any
+    base_url: str
+    max_instances: int
+    urls: List[Tuple[str, Optional[str], str, str]] = field(default_factory=list)
+    
+    def __post_init__(self):
+        self.base = self.base_url.rstrip("/")
+    
+    def get_edit_url(self, instance_id: int) -> str:
+        """Get the edit URL for a page instance"""
+        return f"{self.base}/admin/pages/{instance_id}/edit/"
+    
+    def get_delete_url(self, instance_id: int) -> str:
+        """Get the delete URL for a page instance"""
+        return f"{self.base}/admin/pages/{instance_id}/delete/"
+    
+    def get_frontend_url(self, instance) -> Optional[str]:
+        """Get the frontend URL for a page instance if it has one"""
+        if not hasattr(instance, "url") or not instance.url:
+            return None
+            
+        # Check if already a full URL
+        if instance.url.startswith("http"):
+            return instance.url
+        
+        # Ensure clean joining of URLs
+        page_url = instance.url
+        if page_url.startswith("/"):
+            return f"{self.base}{page_url}"
         else:
-            # For models with no instances, always show the list URL with a note
-            if hasattr(output, "style"):
-                output.write(output.style.INFO(f"Note: {model_name} has no instances"))
-            else:
-                output.write(f"Note: {model_name} has no instances")
-            urls.append(
-                format_url_tuple(
-                    f"{model_name} (NO INSTANCES)", None, "list", f"{base}/admin/pages/"
-                )
+            return f"{self.base}/{page_url}"
+    
+    def get_list_url(self) -> str:
+        """Get the list URL for pages"""
+        return f"{self.base}/admin/pages/"
+    
+    def collect_urls(self) -> List[Tuple[str, Optional[str], str, str]]:
+        """Collect all page admin URLs"""
+        urls = []
+        
+        for model in get_page_models():
+            model_name = f"{model._meta.app_label}.{model._meta.model_name}"
+            
+            # Check if model has any instances
+            has_instances = model_has_instances(self.output, model)
+            
+            # Get instances using our safe query helper
+            instances = (
+                get_instance_sample(self.output, model, self.max_instances) if has_instances else []
             )
+            
+            if instances:
+                # Add edit and frontend URLs for each instance
+                for instance in instances:
+                    instance_name = truncate_instance_name(instance.title)
+                    
+                    # Add admin edit URL
+                    edit_url = self.get_edit_url(instance.id)
+                    urls.append(
+                        format_url_tuple(model_name, instance_name, "edit", edit_url)
+                    )
+                    
+                    # Add delete URL for each page
+                    delete_url = self.get_delete_url(instance.id)
+                    urls.append(
+                        format_url_tuple(model_name, instance_name, "delete", delete_url)
+                    )
+                    
+                    # Add frontend URL if the page has one
+                    frontend_url = self.get_frontend_url(instance)
+                    if frontend_url:
+                        urls.append(
+                            format_url_tuple(
+                                model_name, instance_name, "frontend", frontend_url
+                            )
+                        )
+            else:
+                # For models with no instances, always show the list URL with a note
+                if hasattr(self.output, "style"):
+                    self.output.write(self.output.style.INFO(f"Note: {model_name} has no instances"))
+                else:
+                    self.output.write(f"Note: {model_name} has no instances")
+                urls.append(
+                    format_url_tuple(
+                        f"{model_name} (NO INSTANCES)", None, "list", self.get_list_url()
+                    )
+                )
+        
+        self.urls = urls
+        return urls
+    
+    def page_urls(self) -> List[Tuple[str, Optional[str], str, str]]:
+        """Return all page URLs"""
+        return self.collect_urls()
 
-    return urls

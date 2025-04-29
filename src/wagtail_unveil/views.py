@@ -4,7 +4,7 @@ from io import StringIO
 from wagtail.admin.widgets.button import HeaderButton
 from django.conf import settings
 
-from .helpers.page_helpers import get_page_urls
+from .helpers.page_helpers import PageHelper
 from .helpers.snippet_helpers import get_snippet_urls
 from .helpers.modelviewset_helpers import get_modelviewset_urls
 from .helpers.modeladmin_helpers import get_modeladmin_urls
@@ -74,7 +74,8 @@ class UnveilReportView(ReportView):
         base_url = "http://localhost:8000"  # Default base URL
         
         # Collect page URLs
-        page_urls = get_page_urls(output, base_url, max_instances)
+        page_helper = PageHelper(output, base_url, max_instances)
+        page_urls = page_helper.page_urls()
         for model_name, url_type, url in page_urls:
             all_urls.append(UrlEntry(counter, model_name, url_type, url))
             counter += 1
