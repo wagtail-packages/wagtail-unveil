@@ -36,27 +36,6 @@ def safe_query(
         return fallback_value
 
 
-def safe_import(output, import_func, fallback_value=None, error_msg=None):
-    """
-    Safely import a module with standardized error handling.
-
-    Args:
-        output: The stdout writer from the command
-        import_func: Function that performs the import
-        fallback_value: Value to return if the import fails
-        error_msg: Custom error message
-
-    Returns:
-        The result of the import or the fallback value if it fails
-    """
-    try:
-        return import_func()
-    except (ImportError, ModuleNotFoundError, AttributeError) as e:
-        if error_msg:
-            output.write(f"{error_msg}: {str(e)}")
-        return fallback_value
-
-
 def get_instance_sample(output, model, max_instances=1):
     """
     Get a sample of instances from a model with proper error handling.
@@ -121,26 +100,6 @@ def model_has_instances(output, model):
         fallback_value=False,
         model_name=f"{model._meta.app_label}.{model._meta.model_name}",
     )
-
-
-def format_url_tuple(model_name, instance_name=None, url_type="list", url=None):
-    """
-    Format a URL tuple consistently for the URL output list.
-
-    Args:
-        model_name: The name of the model
-        instance_name: Optional instance name
-        url_type: Type of URL (list, edit, frontend, etc.)
-        url: The actual URL
-
-    Returns:
-        A tuple formatted as (display_name, url_type, url)
-    """
-    display_name = model_name
-    if instance_name:
-        display_name = f"{model_name} ({instance_name})"
-
-    return (display_name, instance_name, url_type, url)
 
 
 def truncate_instance_name(instance_name, max_length=50):

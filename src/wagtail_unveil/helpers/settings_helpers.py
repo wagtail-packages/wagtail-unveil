@@ -5,15 +5,12 @@ from django.apps import apps
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 import wagtail
-from wagtail.models import Collection, Site
+from wagtail.models import Collection, Page, Site, Task, Workflow
 from wagtail.contrib.redirects.models import Redirect
-
-from .base import BaseHelper, get_instance_sample, safe_import
-from wagtail.models import Workflow
-from wagtail.models import Task
 from wagtail.contrib.search_promotions.models import SearchPromotion
 from wagtail.contrib.forms.models import AbstractEmailForm
-from wagtail.models import Page
+
+from .base import BaseHelper, get_instance_sample
 
 """This file needs more work"""
 
@@ -68,7 +65,6 @@ class SettingsHelper(BaseHelper):
     
     def get_form_pages(self):
         """Get form pages"""
-        
         form_pages = []
         for page in Page.objects.specific():
             if isinstance(page, AbstractEmailForm):
@@ -143,12 +139,7 @@ class SettingsHelper(BaseHelper):
                 )
         
         # Collections management
-        collections = safe_import(
-            self.output,
-            self.get_collections,
-            fallback_value=[],
-            error_msg="Error getting collection instances",
-        )
+        collections = self.get_collections()
         
         # Apply max_instances limit if more than one collection exists
         if len(collections) > self.max_instances and self.max_instances > 0:
@@ -168,12 +159,7 @@ class SettingsHelper(BaseHelper):
         
         # Redirects
         if apps.is_installed("wagtail.contrib.redirects"):
-            redirects = safe_import(
-                self.output,
-                self.get_redirects,
-                fallback_value=[],
-                error_msg="Error getting redirect instances",
-            )
+            redirects = self.get_redirects()
             
             for redirect in redirects:
                 redirect_edit_url = f"{self.base}/admin/redirects/{redirect.id}/"
@@ -189,12 +175,7 @@ class SettingsHelper(BaseHelper):
         
         # Workflows
         if hasattr(wagtail.models, "Workflow"):
-            workflows = safe_import(
-                self.output,
-                self.get_workflows,
-                fallback_value=[],
-                error_msg="Error getting workflow instances",
-            )
+            workflows = self.get_workflows()
             
             for workflow in workflows:
                 workflow_edit_url = f"{self.base}/admin/workflows/edit/{workflow.id}/"
@@ -210,12 +191,7 @@ class SettingsHelper(BaseHelper):
         
         # Workflow tasks
         if hasattr(wagtail.models, "Task"):
-            tasks = safe_import(
-                self.output,
-                self.get_tasks,
-                fallback_value=[],
-                error_msg="Error getting workflow task instances",
-            )
+            tasks = self.get_tasks()
             
             for task in tasks:
                 task_edit_url = f"{self.base}/admin/workflows/tasks/edit/{task.id}/"
@@ -231,15 +207,9 @@ class SettingsHelper(BaseHelper):
         
         # Locales
         if locales_app_installed:
-            # Use safe_import to import the Locale model
-            Locale = safe_import(
-                self.output,
-                lambda: __import__("wagtail.models", fromlist=["Locale"]).Locale,
-                fallback_value=None,
-                error_msg="Error importing Locale model"
-            )
-            
-            if Locale:
+            try:
+                from wagtail.models import Locale
+                
                 # Try to get locales
                 locales = get_instance_sample(self.output, Locale, max_instances=self.max_instances)
                 if locales:
@@ -263,7 +233,7 @@ class SettingsHelper(BaseHelper):
                     self.add_url_for_model_with_no_instances(
                         "Settings > Locales > Example", locale_edit_url
                     )
-            else:
+            except ImportError:
                 # The Locale model isn't available
                 if hasattr(self.output, "style"):
                     self.output.write(self.output.style.WARNING("Note: wagtail.locales is installed but Locale model is not available"))
@@ -272,12 +242,7 @@ class SettingsHelper(BaseHelper):
         
         # Search promotions
         if search_promotions_installed:
-            promotions = safe_import(
-                self.output,
-                self.get_search_promotions,
-                fallback_value=[],
-                error_msg="Error getting search promotion instances",
-            )
+            promotions = self.get_search_promotions()
             
             # Add search promotions list URL
             search_promotions_url = f"{self.base}/admin/searchpicks/"
@@ -338,12 +303,7 @@ class SettingsHelper(BaseHelper):
         if apps.is_installed("wagtail.contrib.forms"):
             self.output.write("Checking for form pages...")
             
-            form_pages = safe_import(
-                self.output,
-                self.get_form_pages,
-                fallback_value=[],
-                error_msg="Error detecting form pages",
-            )
+            form_pages = self.get_form_pages()
             
             # Add the main forms listing URL
             forms_list_url = f"{self.base}/admin/forms/"
