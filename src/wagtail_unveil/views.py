@@ -5,7 +5,7 @@ from wagtail.admin.widgets.button import HeaderButton
 from django.conf import settings
 
 from .helpers.page_helpers import PageHelper
-from .helpers.snippet_helpers import get_snippet_urls
+from .helpers.snippet_helpers import SnippetHelper
 from .helpers.modelviewset_helpers import get_modelviewset_urls
 from .helpers.modeladmin_helpers import get_modeladmin_urls
 from .helpers.settings_helpers import get_settings_admin_urls
@@ -81,7 +81,8 @@ class UnveilReportView(ReportView):
             counter += 1
         
         # Get snippet models and collect snippet URLs
-        snippet_urls = get_snippet_urls(output, base_url, max_instances)
+        snippet_helper = SnippetHelper(output, base_url, max_instances)
+        snippet_urls = snippet_helper.snippet_urls()
         for model_name, url_type, url in snippet_urls:
             all_urls.append(UrlEntry(counter, model_name, url_type, url))
             counter += 1

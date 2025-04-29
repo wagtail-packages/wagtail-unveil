@@ -2,10 +2,10 @@ from django.test import TestCase
 from io import StringIO
 from unittest.mock import Mock, patch
 
-from wagtail_unveil.helpers.snippet_helpers import get_snippet_urls
+from wagtail_unveil.helpers.snippet_helpers import SnippetHelper
 
 
-class GetSnippetUrlsTests(TestCase):
+class SnippetHelperTests(TestCase):
     def setUp(self):
         self.output = StringIO()
         
@@ -36,8 +36,8 @@ class GetSnippetUrlsTests(TestCase):
     @patch('wagtail_unveil.helpers.snippet_helpers.ContentType.objects.get_for_model')
     @patch('wagtail_unveil.helpers.snippet_helpers.model_has_instances')
     @patch('wagtail_unveil.helpers.snippet_helpers.get_instance_sample')
-    def test_get_snippet_urls_with_instances(self, mock_get_instance_sample, mock_model_has_instances, mock_get_for_model, mock_get_snippet_models):
-        """Test get_snippet_urls with models that have instances."""
+    def test_snippet_urls_with_instances(self, mock_get_instance_sample, mock_model_has_instances, mock_get_for_model, mock_get_snippet_models):
+        """Test snippet_urls with models that have instances."""
         # Set up the snippet models mock
         mock_get_snippet_models.return_value = self.snippet_models
         
@@ -58,26 +58,27 @@ class GetSnippetUrlsTests(TestCase):
         # Set up the get_instance_sample mock to return instances for the first model
         mock_get_instance_sample.return_value = [self.mock_instance1, self.mock_instance2]
         
-        # Call the function
-        result = get_snippet_urls(self.output, self.base_url, self.max_instances)
+        # Create the helper and call snippet_urls
+        helper = SnippetHelper(self.output, self.base_url, self.max_instances)
+        result = helper.snippet_urls()
         
         # Check that we get the expected URLs
         # 1 list URL + 2 edit URLs + 2 delete URLs for the model with instances + 1 list URL for the model without instances
         self.assertEqual(len(result), 6)
         
         # Check list URL for the model with instances
-        self.assertIn(("app1.model1", "list", "http://testserver/admin/snippets/app1/model1/"), result)
+        self.assertIn(("app1.model1", None, "list", "http://testserver/admin/snippets/app1/model1/"), result)
         
         # Check edit URLs for instances
-        self.assertIn(("app1.model1 (Instance 1)", "edit", "http://testserver/admin/snippets/app1/model1/1/"), result)
-        self.assertIn(("app1.model1 (Instance 2)", "edit", "http://testserver/admin/snippets/app1/model1/2/"), result)
+        self.assertIn(("app1.model1", "Instance 1", "edit", "http://testserver/admin/snippets/app1/model1/1/"), result)
+        self.assertIn(("app1.model1", "Instance 2", "edit", "http://testserver/admin/snippets/app1/model1/2/"), result)
         
         # Check delete URLs for instances
-        self.assertIn(("app1.model1 (Instance 1)", "delete", "http://testserver/admin/snippets/app1/model1/1/delete/"), result)
-        self.assertIn(("app1.model1 (Instance 2)", "delete", "http://testserver/admin/snippets/app1/model1/2/delete/"), result)
+        self.assertIn(("app1.model1", "Instance 1", "delete", "http://testserver/admin/snippets/app1/model1/1/delete/"), result)
+        self.assertIn(("app1.model1", "Instance 2", "delete", "http://testserver/admin/snippets/app1/model1/2/delete/"), result)
         
         # Check list URL for the model without instances
-        self.assertIn(("app2.model2 (NO INSTANCES)", "list", "http://testserver/admin/snippets/app2/model2/"), result)
+        self.assertIn(("app2.model2 (NO INSTANCES)", None, "list", "http://testserver/admin/snippets/app2/model2/"), result)
         
         # Check the output message for models with no instances
         self.assertIn("Note: app2.model2 has no instances", self.output.getvalue())
@@ -85,8 +86,8 @@ class GetSnippetUrlsTests(TestCase):
     @patch('wagtail_unveil.helpers.snippet_helpers.get_snippet_models')
     @patch('wagtail_unveil.helpers.snippet_helpers.ContentType.objects.get_for_model')
     @patch('wagtail_unveil.helpers.snippet_helpers.model_has_instances')
-    def test_get_snippet_urls_without_instances(self, mock_model_has_instances, mock_get_for_model, mock_get_snippet_models):
-        """Test get_snippet_urls with models that have no instances."""
+    def test_snippet_urls_without_instances(self, mock_model_has_instances, mock_get_for_model, mock_get_snippet_models):
+        """Test snippet_urls with models that have no instances."""
         # Set up the snippet models mock
         mock_get_snippet_models.return_value = self.snippet_models
         
@@ -104,15 +105,16 @@ class GetSnippetUrlsTests(TestCase):
         # Set up the model_has_instances mock to return False for both models
         mock_model_has_instances.side_effect = [False, False]
         
-        # Call the function
-        result = get_snippet_urls(self.output, self.base_url, self.max_instances)
+        # Create the helper and call snippet_urls
+        helper = SnippetHelper(self.output, self.base_url, self.max_instances)
+        result = helper.snippet_urls()
         
         # Check that we get the expected URLs
         self.assertEqual(len(result), 2)  # 2 list URLs for models with no instances
         
         # Check list URLs for models with no instances
-        self.assertIn(("app1.model1 (NO INSTANCES)", "list", "http://testserver/admin/snippets/app1/model1/"), result)
-        self.assertIn(("app2.model2 (NO INSTANCES)", "list", "http://testserver/admin/snippets/app2/model2/"), result)
+        self.assertIn(("app1.model1 (NO INSTANCES)", None, "list", "http://testserver/admin/snippets/app1/model1/"), result)
+        self.assertIn(("app2.model2 (NO INSTANCES)", None, "list", "http://testserver/admin/snippets/app2/model2/"), result)
         
         # Check the output messages for models with no instances
         self.assertIn("Note: app1.model1 has no instances", self.output.getvalue())
@@ -121,8 +123,8 @@ class GetSnippetUrlsTests(TestCase):
     @patch('wagtail_unveil.helpers.snippet_helpers.get_snippet_models')
     @patch('wagtail_unveil.helpers.snippet_helpers.ContentType.objects.get_for_model')
     @patch('wagtail_unveil.helpers.snippet_helpers.model_has_instances')
-    def test_get_snippet_urls_with_styled_output(self, mock_model_has_instances, mock_get_for_model, mock_get_snippet_models):
-        """Test get_snippet_urls with styled output."""
+    def test_snippet_urls_with_styled_output(self, mock_model_has_instances, mock_get_for_model, mock_get_snippet_models):
+        """Test snippet_urls with styled output."""
         # Create a mock output with style
         output_with_style = Mock()
         output_with_style.style = Mock()
@@ -141,8 +143,9 @@ class GetSnippetUrlsTests(TestCase):
         # Set up other mocks
         mock_model_has_instances.return_value = False
         
-        # Call the function
-        get_snippet_urls(output_with_style, self.base_url, self.max_instances)
+        # Create the helper and call snippet_urls
+        helper = SnippetHelper(output_with_style, self.base_url, self.max_instances)
+        helper.snippet_urls()
         
         # Check that the style.INFO method was used for the output
         output_with_style.write.assert_called_once()

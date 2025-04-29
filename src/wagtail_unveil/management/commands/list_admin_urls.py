@@ -21,7 +21,7 @@ from wagtail_unveil.helpers.page_helpers import (
 from wagtail_unveil.helpers.site_helpers import get_site_urls
 from wagtail_unveil.helpers.settings_helpers import get_settings_admin_urls
 from wagtail_unveil.helpers.snippet_helpers import (
-    get_snippet_urls,
+    SnippetHelper,
 )
 from wagtail_unveil.helpers.modelviewset_helpers import (
     get_modelviewset_models,
@@ -163,9 +163,8 @@ class Command(BaseCommand):
             self.stdout.write(f"  - {model.__name__}")
 
         # Get URLs for snippet models
-        snippet_urls = get_snippet_urls(
-            self.stdout, base_url, max_instances
-        )
+        snippet_helper = SnippetHelper(self.stdout, base_url, max_instances)
+        snippet_urls = snippet_helper.snippet_urls()
         urls.extend(snippet_urls)
 
         # Get generic Django models with ModelAdmin
