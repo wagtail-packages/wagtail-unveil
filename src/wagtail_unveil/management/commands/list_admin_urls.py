@@ -12,7 +12,7 @@ from wagtail_unveil.helpers.image_helpers import ImageHelper
 from wagtail_unveil.helpers.document_helpers import DocumentHelper
 from wagtail_unveil.helpers.modeladmin_helpers import (
     get_modeladmin_models,
-    get_modeladmin_urls,
+    ModelAdminHelper,
 )
 from wagtail_unveil.helpers.page_helpers import (
     PageHelper,
@@ -173,11 +173,8 @@ class Command(BaseCommand):
             self.stdout.write(f"  - {model.__name__}")
 
         # Get URLs for modeladmin models
-        modeladmin_urls = get_modeladmin_urls(
-            self.stdout,
-            base_url,
-            max_instances,
-        )
+        modeladmin_helper = ModelAdminHelper(self.stdout, base_url, max_instances)
+        modeladmin_urls = modeladmin_helper.modeladmin_urls()
         urls.extend(modeladmin_urls)
 
         # Get models registered with ModelViewSet
