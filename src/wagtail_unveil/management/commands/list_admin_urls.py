@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand
-from wagtail.models import Site
+from wagtail.models import Site, get_page_models
 from wagtail.snippets.models import get_snippet_models
 from django.conf import settings
 import requests
@@ -15,7 +15,6 @@ from wagtail_unveil.helpers.modeladmin_helpers import (
     get_modeladmin_urls,
 )
 from wagtail_unveil.helpers.page_helpers import (
-    get_page_models,
     PageHelper,
 )
 from wagtail_unveil.helpers.site_helpers import get_site_urls
