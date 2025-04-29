@@ -45,8 +45,7 @@ class DocumentHelperTests(TestCase):
     @patch('wagtail_unveil.helpers.document_helpers.model_has_instances')
     @patch('wagtail_unveil.helpers.document_helpers.get_instance_sample')
     @patch('wagtail_unveil.helpers.document_helpers.truncate_instance_name')
-    @patch('wagtail_unveil.helpers.document_helpers.format_url_tuple')
-    def test_collect_urls_with_instances(self, mock_format_url_tuple, mock_truncate_instance_name, 
+    def test_collect_urls_with_instances(self, mock_truncate_instance_name, 
                                        mock_get_instance_sample, mock_model_has_instances, mock_get_document_model):
         """Test collect_urls method when there are document instances."""
         # Set up mocks
@@ -65,58 +64,54 @@ class DocumentHelperTests(TestCase):
         
         mock_truncate_instance_name.side_effect = lambda x: f"Truncated {x}"
         
-        mock_format_url_tuple.side_effect = lambda model, instance_name, url_type, url: (model, instance_name, url_type)
-        
-        # Create helper and collect URLs
+        # Create helper and collect URLs, with proper method mocks
         helper = DocumentHelper(self.output, self.base_url, self.max_instances)
-        result = helper.collect_urls()
+        helper.add_list_url = Mock()
+        helper.add_edit_url = Mock()
+        helper.add_delete_url = Mock()
         
-        # Check the results
-        self.assertEqual(len(result), 5)  # 1 list + 2 edit URLs + 2 delete URLs
+        helper.collect_urls()
         
-        # Check that the list URL was added with the correct format
-        mock_format_url_tuple.assert_any_call("wagtaildocs.document", None, "list", "http://testserver/admin/documents/")
+        # Check that the helper methods were called correctly
+        helper.add_list_url.assert_called_once_with("wagtaildocs.document", "http://testserver/admin/documents/")
         
         # Check that edit URLs were added with the correct format
-        mock_format_url_tuple.assert_any_call(
-            "wagtaildocs.document", "Truncated Document 1", "edit", "http://testserver/admin/documents/edit/1/"
+        helper.add_edit_url.assert_any_call(
+            "wagtaildocs.document", "Truncated Document 1", "http://testserver/admin/documents/edit/1/"
         )
-        mock_format_url_tuple.assert_any_call(
-            "wagtaildocs.document", "Truncated Document 2", "edit", "http://testserver/admin/documents/edit/2/"
+        helper.add_edit_url.assert_any_call(
+            "wagtaildocs.document", "Truncated Document 2", "http://testserver/admin/documents/edit/2/"
         )
         
         # Check that delete URLs were added with the correct format
-        mock_format_url_tuple.assert_any_call(
-            "wagtaildocs.document", "Truncated Document 1", "delete", "http://testserver/admin/documents/delete/1/"
+        helper.add_delete_url.assert_any_call(
+            "wagtaildocs.document", "Truncated Document 1", "http://testserver/admin/documents/delete/1/"
         )
-        mock_format_url_tuple.assert_any_call(
-            "wagtaildocs.document", "Truncated Document 2", "delete", "http://testserver/admin/documents/delete/2/"
+        helper.add_delete_url.assert_any_call(
+            "wagtaildocs.document", "Truncated Document 2", "http://testserver/admin/documents/delete/2/"
         )
 
     @patch('wagtail_unveil.helpers.document_helpers.get_document_model')
     @patch('wagtail_unveil.helpers.document_helpers.model_has_instances')
-    @patch('wagtail_unveil.helpers.document_helpers.format_url_tuple')
-    def test_collect_urls_without_instances(self, mock_format_url_tuple, mock_model_has_instances, mock_get_document_model):
+    def test_collect_urls_without_instances(self, mock_model_has_instances, mock_get_document_model):
         """Test collect_urls method when there are no document instances."""
         # Set up mocks
         mock_get_document_model.return_value = self.mock_document_model
         mock_model_has_instances.return_value = False
         
-        mock_format_url_tuple.side_effect = lambda model, instance_name, url_type, url: (model, instance_name, url_type)
-        
-        # Create helper and collect URLs
+        # Create helper and collect URLs, with proper method mocks
         helper = DocumentHelper(self.output, self.base_url, self.max_instances)
-        result = helper.collect_urls()
+        helper.write_no_instances_message = Mock()
+        helper.add_url_for_model_with_no_instances = Mock()
         
-        # Check the results
-        self.assertEqual(len(result), 1)  # Only the list URL
+        helper.collect_urls()
         
-        # Verify the correct message was written to output
-        self.assertIn("Note: wagtaildocs.document has no instances", self.output.getvalue())
+        # Verify write_no_instances_message was called
+        helper.write_no_instances_message.assert_called_once_with("wagtaildocs.document")
         
-        # Check that the list URL was added with the correct format and NO INSTANCES note
-        mock_format_url_tuple.assert_called_once_with(
-            "wagtaildocs.document (NO INSTANCES)", None, "list", "http://testserver/admin/documents/"
+        # Check that add_url_for_model_with_no_instances was called with the correct arguments
+        helper.add_url_for_model_with_no_instances.assert_called_once_with(
+            "wagtaildocs.document", "http://testserver/admin/documents/"
         )
 
     @patch('wagtail_unveil.helpers.document_helpers.get_document_model')
@@ -135,6 +130,7 @@ class DocumentHelperTests(TestCase):
         
         # Create helper and collect URLs
         helper = DocumentHelper(mock_output, self.base_url, self.max_instances)
+        helper.add_url_for_model_with_no_instances = Mock()
         helper.collect_urls()
         
         # Check that style.INFO was called correctly
