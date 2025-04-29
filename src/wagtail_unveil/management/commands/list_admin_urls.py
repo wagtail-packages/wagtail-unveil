@@ -1,31 +1,28 @@
-from django.core.management.base import BaseCommand
-from wagtail.models import Site, get_page_models
-from wagtail.snippets.models import get_snippet_models
-from django.conf import settings
-import requests
-from requests.exceptions import RequestException
-import getpass
 import re
+from getpass import getpass
 from urllib.parse import urljoin
 
-from wagtail_unveil.helpers.image_helpers import ImageHelper
+import requests
+from django.conf import settings
+from django.core.management.base import BaseCommand
+from requests.exceptions import RequestException
+from wagtail.models import Site, get_page_models
+from wagtail.snippets.models import get_snippet_models
+
 from wagtail_unveil.helpers.document_helpers import DocumentHelper
+from wagtail_unveil.helpers.image_helpers import ImageHelper
 from wagtail_unveil.helpers.modeladmin_helpers import (
-    get_modeladmin_models,
     ModelAdminHelper,
-)
-from wagtail_unveil.helpers.page_helpers import (
-    PageHelper,
-)
-from wagtail_unveil.helpers.site_helpers import get_site_urls
-from wagtail_unveil.helpers.settings_helpers import get_settings_admin_urls
-from wagtail_unveil.helpers.snippet_helpers import (
-    SnippetHelper,
+    get_modeladmin_models,
 )
 from wagtail_unveil.helpers.modelviewset_helpers import (
-    get_modelviewset_models,
     ModelViewSetHelper,
+    get_modelviewset_models,
 )
+from wagtail_unveil.helpers.page_helpers import PageHelper
+from wagtail_unveil.helpers.settings_helpers import get_settings_admin_urls
+from wagtail_unveil.helpers.site_helpers import get_site_urls
+from wagtail_unveil.helpers.snippet_helpers import SnippetHelper
 
 
 class Command(BaseCommand):
@@ -119,7 +116,7 @@ class Command(BaseCommand):
             if not username:
                 username = input("Admin username: ")
             if not password:
-                password = getpass.getpass("Admin password: ")
+                password = getpass("Admin password: ")
                 
             if not username or not password:
                 self.stdout.write(
@@ -222,9 +219,9 @@ class Command(BaseCommand):
                 failure_count = 0
                 
                 for url_data in urls:
-                    model_name, url_type, url = url_data
+                    display_name, instance_name, url_type, url = url_data
                     status = self._check_url_with_session(session, url)
-                    checked_urls.append((model_name, url_type, url, status))
+                    checked_urls.append((display_name, instance_name, url_type, url, status))
                     
                     # Count successes and failures
                     if status == "OK":
@@ -241,8 +238,8 @@ class Command(BaseCommand):
                 failure_count = 0
         
         # Group URLs by frontend vs backend
-        frontend_urls = [url for url in urls if url[1] == "frontend"]
-        backend_urls = [url for url in urls if url[1] != "frontend"]
+        frontend_urls = [url for url in urls if url[2] == "frontend"]
+        backend_urls = [url for url in urls if url[2] != "frontend"]
 
         # Output the URLs
         if output_type == "console":
@@ -251,96 +248,96 @@ class Command(BaseCommand):
             self.stdout.write("=" * 50)
             for url_data in frontend_urls:
                 if check_urls:
-                    model_name, url_type, url, status = url_data
+                    display_name, _, _, url, status = url_data
                     if status == "OK":
                         status_str = self.style.SUCCESS(f"[{status}]")
                     else:
                         status_str = self.style.ERROR(f"[{status}]")
-                    self.stdout.write(f"{model_name}: {url} {status_str}")
+                    self.stdout.write(f"{display_name}: {url} {status_str}")
                 else:
-                    model_name, url_type, url = url_data
-                    self.stdout.write(f"{model_name}: {url}")
+                    display_name, _, _, url = url_data
+                    self.stdout.write(f"{display_name}: {url}")
 
             self.stdout.write("\n" + "=" * 50)
             self.stdout.write(self.style.SUCCESS("BACKEND URLS"))
             self.stdout.write("=" * 50)
 
             # Group backend URLs by type
-            admin_urls = [url for url in backend_urls if url[1] == "admin"]
-            edit_urls = [url for url in backend_urls if url[1] == "edit"]
-            list_urls = [url for url in backend_urls if url[1] == "list"]
-            delete_urls = [url for url in backend_urls if url[1] == "delete"]
-            other_urls = [url for url in backend_urls if url[1] not in ["admin", "edit", "list", "delete"]]
+            admin_urls = [url for url in backend_urls if url[2] == "admin"]
+            edit_urls = [url for url in backend_urls if url[2] == "edit"]
+            list_urls = [url for url in backend_urls if url[2] == "list"]
+            delete_urls = [url for url in backend_urls if url[2] == "delete"]
+            other_urls = [url for url in backend_urls if url[2] not in ["admin", "edit", "list", "delete"]]
 
             if admin_urls:
                 self.stdout.write("\n" + "-" * 25 + " ADMIN " + "-" * 25)
                 for url_data in admin_urls:
                     if check_urls:
-                        model_name, url_type, url, status = url_data
+                        display_name, _, _, url, status = url_data
                         if status == "OK":
                             status_str = self.style.SUCCESS(f"[{status}]")
                         else:
                             status_str = self.style.ERROR(f"[{status}]")
-                        self.stdout.write(f"{model_name}: {url} {status_str}")
+                        self.stdout.write(f"{display_name}: {url} {status_str}")
                     else:
-                        model_name, url_type, url = url_data
-                        self.stdout.write(f"{model_name}: {url}")
+                        display_name, _, _, url = url_data
+                        self.stdout.write(f"{display_name}: {url}")
 
             if list_urls:
                 self.stdout.write("\n" + "-" * 25 + " LIST " + "-" * 25)
                 for url_data in list_urls:
                     if check_urls:
-                        model_name, url_type, url, status = url_data
+                        display_name, _, _, url, status = url_data
                         if status == "OK":
                             status_str = self.style.SUCCESS(f"[{status}]")
                         else:
                             status_str = self.style.ERROR(f"[{status}]")
-                        self.stdout.write(f"{model_name}: {url} {status_str}")
+                        self.stdout.write(f"{display_name}: {url} {status_str}")
                     else:
-                        model_name, url_type, url = url_data
-                        self.stdout.write(f"{model_name}: {url}")
+                        display_name, _, _, url = url_data
+                        self.stdout.write(f"{display_name}: {url}")
 
             if edit_urls:
                 self.stdout.write("\n" + "-" * 25 + " EDIT " + "-" * 25)
                 for url_data in edit_urls:
                     if check_urls:
-                        model_name, url_type, url, status = url_data
+                        display_name, _, _, url, status = url_data
                         if status == "OK":
                             status_str = self.style.SUCCESS(f"[{status}]")
                         else:
                             status_str = self.style.ERROR(f"[{status}]")
-                        self.stdout.write(f"{model_name}: {url} {status_str}")
+                        self.stdout.write(f"{display_name}: {url} {status_str}")
                     else:
-                        model_name, url_type, url = url_data
-                        self.stdout.write(f"{model_name}: {url}")
+                        display_name, _, _, url = url_data
+                        self.stdout.write(f"{display_name}: {url}")
 
             if delete_urls:
                 self.stdout.write("\n" + "-" * 25 + " DELETE " + "-" * 25)
                 for url_data in delete_urls:
                     if check_urls:
-                        model_name, url_type, url, status = url_data
+                        display_name, _, _, url, status = url_data
                         if status == "OK":
                             status_str = self.style.SUCCESS(f"[{status}]")
                         else:
                             status_str = self.style.ERROR(f"[{status}]")
-                        self.stdout.write(f"{model_name}: {url} {status_str}")
+                        self.stdout.write(f"{display_name}: {url} {status_str}")
                     else:
-                        model_name, url_type, url = url_data
-                        self.stdout.write(f"{model_name}: {url}")
+                        display_name, _, _, url = url_data
+                        self.stdout.write(f"{display_name}: {url}")
 
             if other_urls:
                 self.stdout.write("\n" + "-" * 25 + " OTHER " + "-" * 25)
                 for url_data in other_urls:
                     if check_urls:
-                        model_name, url_type, url, status = url_data
+                        display_name, _, _, url, status = url_data
                         if status == "OK":
                             status_str = self.style.SUCCESS(f"[{status}]")
                         else:
                             status_str = self.style.ERROR(f"[{status}]")
-                        self.stdout.write(f"{model_name}: {url} {status_str}")
+                        self.stdout.write(f"{display_name}: {url} {status_str}")
                     else:
-                        model_name, url_type, url = url_data
-                        self.stdout.write(f"{model_name}: {url}")
+                        display_name, _, _, url = url_data
+                        self.stdout.write(f"{display_name}: {url}")
         else:
             with open(output_file, "w") as f:
                 f.write("=" * 50 + "\n")
@@ -348,79 +345,79 @@ class Command(BaseCommand):
                 f.write("=" * 50 + "\n")
                 for url_data in frontend_urls:
                     if check_urls:
-                        model_name, url_type, url, status = url_data
+                        display_name, _, _, url, status = url_data
                         status_str = f"[{status}]" if status else ""
                         # Note: Terminal colors don't work in files, but consistent format
-                        f.write(f"{model_name}: {url} {status_str}\n")
+                        f.write(f"{display_name}: {url} {status_str}\n")
                     else:
-                        model_name, url_type, url = url_data
-                        f.write(f"{model_name}: {url}\n")
+                        display_name, _, _, url = url_data
+                        f.write(f"{display_name}: {url}\n")
 
                 f.write("\n" + "=" * 50 + "\n")
                 f.write("BACKEND URLS\n")
                 f.write("=" * 50 + "\n")
 
                 # Group backend URLs by type
-                admin_urls = [url for url in backend_urls if url[1] == "admin"]
-                edit_urls = [url for url in backend_urls if url[1] == "edit"]
-                list_urls = [url for url in backend_urls if url[1] == "list"]
-                delete_urls = [url for url in backend_urls if url[1] == "delete"]
-                other_urls = [url for url in backend_urls if url[1] not in ["admin", "edit", "list", "delete"]]
+                admin_urls = [url for url in backend_urls if url[2] == "admin"]
+                edit_urls = [url for url in backend_urls if url[2] == "edit"]
+                list_urls = [url for url in backend_urls if url[2] == "list"]
+                delete_urls = [url for url in backend_urls if url[2] == "delete"]
+                other_urls = [url for url in backend_urls if url[2] not in ["admin", "edit", "list", "delete"]]
 
                 if admin_urls:
                     f.write("\n" + "-" * 25 + " ADMIN " + "-" * 25 + "\n")
                     for url_data in admin_urls:
                         if check_urls:
-                            model_name, url_type, url, status = url_data
+                            display_name, _, _, url, status = url_data
                             status_str = f"[{status}]" if status else ""
-                            f.write(f"{model_name}: {url} {status_str}\n")
+                            f.write(f"{display_name}: {url} {status_str}\n")
                         else:
-                            model_name, url_type, url = url_data
-                            f.write(f"{model_name}: {url}\n")
+                            display_name, _, _, url = url_data
+                            f.write(f"{display_name}: {url}\n")
 
                 if list_urls:
                     f.write("\n" + "-" * 25 + " LIST " + "-" * 25 + "\n")
                     for url_data in list_urls:
                         if check_urls:
-                            model_name, url_type, url, status = url_data
+                            display_name, _, _, url, status = url_data
                             status_str = f"[{status}]" if status else ""
-                            f.write(f"{model_name}: {url} {status_str}\n")
+                            f.write(f"{display_name}: {url} {status_str}\n")
                         else:
-                            model_name, url_type, url = url_data
-                            f.write(f"{model_name}: {url}\n")
+                            display_name, _, _, url = url_data
+                            f.write(f"{display_name}: {url}\n")
 
                 if edit_urls:
                     f.write("\n" + "-" * 25 + " EDIT " + "-" * 25 + "\n")
                     for url_data in edit_urls:
                         if check_urls:
-                            model_name, url_type, url, status = url_data
+                            display_name, _, _, url, status = url_data
                             status_str = f"[{status}]" if status else ""
-                            f.write(f"{model_name}: {url} {status_str}\n")
+                            f.write(f"{display_name}: {url} {status_str}\n")
                         else:
-                            model_name, url_type, url = url_data
-                            f.write(f"{model_name}: {url}\n")
+                            display_name, _, _, url = url_data
+                            f.write(f"{display_name}: {url}\n")
 
                 if delete_urls:
                     f.write("\n" + "-" * 25 + " DELETE " + "-" * 25 + "\n")
                     for url_data in delete_urls:
                         if check_urls:
-                            model_name, url_type, url, status = url_data
+                            display_name, _, _, url, status = url_data
                             status_str = f"[{status}]" if status else ""
-                            f.write(f"{model_name}: {url} {status_str}\n")
+                            f.write(f"{display_name}: {url} {status_str}\n")
                         else:
-                            model_name, url_type, url = url_data
-                            f.write(f"{model_name}: {url}\n")
+                            display_name, _, _, url = url_data
+                            f.write(f"{display_name}: {url}\n")
 
                 if other_urls:
                     f.write("\n" + "-" * 25 + " OTHER " + "-" * 25 + "\n")
                     for url_data in other_urls:
                         if check_urls:
-                            model_name, url_type, url, status = url_data
+                            display_name, _, _, url, status = url_data
                             status_str = f"[{status}]" if status else ""
-                            f.write(f"{model_name}: {url} {status_str}\n")
+                            f.write(f"{display_name}: {url} {status_str}\n")
                         else:
-                            model_name, url_type, url = url_data
-                            f.write(f"{model_name}: {url}\n")
+                            display_name, _, _, url = url_data
+                            f.write(f"{display_name}: {url}\n")
                 
                 # Add URL check summary to the end of the file
                 if check_urls:

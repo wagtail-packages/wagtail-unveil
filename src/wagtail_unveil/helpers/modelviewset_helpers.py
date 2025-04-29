@@ -1,31 +1,25 @@
 import inspect
-from dataclasses import dataclass, field
 from importlib import import_module
-from typing import Any, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 from django.apps import apps
 
 from .base import (
-    format_url_tuple,
+    BaseHelper,
     get_instance_sample,
     model_has_instances,
     truncate_instance_name,
 )
 
 
-@dataclass
-class ModelViewSetHelper:
+class ModelViewSetHelper(BaseHelper):
     """
     A dataclass that encapsulates ModelViewSet helper functionality.
     Developers can inherit from this class to extend its functionality.
     """
-    output: Any
-    base_url: str
-    max_instances: int
-    urls: List[Tuple[str, Optional[str], str, str]] = field(default_factory=list)
     
     def __post_init__(self):
-        self.base = self.base_url.rstrip("/")
+        super().__post_init__()
         # Models that should be skipped because they're already included in settings
         self.skip_models = ["wagtailcore.locale", "wagtailcore.site"]
     
@@ -87,10 +81,10 @@ class ModelViewSetHelper:
     def collect_urls(self) -> List[Tuple[str, Optional[str], str, str]]:
         """Get admin URLs for models registered with ModelViewSet"""
         # Get the models
-        modelviewset_models = get_modelviewset_models()
+        modelviewset_models = self.get_modelviewset_models()
         
         for model in modelviewset_models:
-            model_name = f"{model._meta.app_label}.{model._meta.model_name}"
+            model_name = self.get_model_name(model)
             
             # Skip models that are already covered by settings admin URLs
             if model_name in self.skip_models:
@@ -106,7 +100,7 @@ class ModelViewSetHelper:
             list_url = self.get_list_url(model)
             
             if has_instances:
-                self.urls.append(format_url_tuple(model_name, None, "list", list_url))
+                self.add_list_url(model_name, list_url)
                 
                 # Add edit URLs for actual instances
                 instances = get_instance_sample(self.output, model, self.max_instances)
@@ -115,26 +109,15 @@ class ModelViewSetHelper:
                     
                     # Add edit URL
                     edit_url = self.get_edit_url(model, instance.id)
-                    self.urls.append(
-                        format_url_tuple(model_name, instance_name, "edit", edit_url)
-                    )
+                    self.add_edit_url(model_name, instance_name, edit_url)
                     
                     # Add delete URL
                     delete_url = self.get_delete_url(model, instance.id)
-                    self.urls.append(
-                        format_url_tuple(model_name, instance_name, "delete", delete_url)
-                    )
+                    self.add_delete_url(model_name, instance_name, delete_url)
             else:
                 # For models with no instances, always show the list URL with a note
-                if hasattr(self.output, "style"):
-                    self.output.write(
-                        self.output.style.INFO(f"Note: {model_name} has no instances")
-                    )
-                else:
-                    self.output.write(f"Note: {model_name} has no instances")
-                self.urls.append(
-                    format_url_tuple(f"{model_name} (NO INSTANCES)", None, "list", list_url)
-                )
+                self.write_no_instances_message(model_name)
+                self.add_url_for_model_with_no_instances(model_name, list_url)
         
         return self.urls
     

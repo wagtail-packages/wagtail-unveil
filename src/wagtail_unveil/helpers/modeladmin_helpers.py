@@ -1,32 +1,22 @@
 import inspect
-from dataclasses import dataclass, field
 from importlib import import_module
-from typing import Any, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from django.apps import apps
 
 from .base import (
-    format_url_tuple,
+    BaseHelper,
     get_instance_sample,
     model_has_instances,
     truncate_instance_name,
 )
 
 
-@dataclass
-class ModelAdminHelper:
+class ModelAdminHelper(BaseHelper):
     """
     A dataclass that encapsulates modeladmin helper functionality.
     Developers can inherit from this class to extend its functionality.
     """
-    output: Any
-    base_url: str
-    max_instances: int
-    urls: List[Tuple[str, Optional[str], str, str]] = field(default_factory=list)
-    
-    def __post_init__(self):
-        # Strip trailing slash from base_url to avoid double slashes
-        self.base = self.base_url.rstrip("/")
     
     def get_modeladmin_models(self):
         """
@@ -56,7 +46,7 @@ class ModelAdminHelper:
 
         return modeladmin_models
     
-    def get_modeladmin_url_paths(self):
+    def get_modeladmin_url_paths(self) -> Dict:
         """Find custom URL paths for models by re-inspecting wagtail_hooks"""
         modeladmin_url_paths = {}
         
@@ -72,7 +62,7 @@ class ModelAdminHelper:
         
         return modeladmin_url_paths
     
-    def get_list_url(self, model, custom_url_path=None):
+    def get_list_url(self, model, custom_url_path=None) -> str:
         """Get the list URL for a modeladmin model"""
         if custom_url_path:
             # Use the custom URL path
@@ -84,7 +74,7 @@ class ModelAdminHelper:
             # return f"{self.base}/admin/{model._meta.app_label}/{model._meta.model_name}/"
             return f"{self.base}/admin/modeladmin/{model._meta.app_label}/{model._meta.model_name}/"
     
-    def get_edit_url(self, model, instance_id, custom_url_path=None):
+    def get_edit_url(self, model, instance_id, custom_url_path=None) -> str:
         """Get the edit URL for a modeladmin instance"""
         if custom_url_path:
             # Use the custom URL path for edit URLs
@@ -96,7 +86,7 @@ class ModelAdminHelper:
             # return f"{self.base}/admin/{model._meta.app_label}/{model._meta.model_name}/edit/{instance_id}/"
             return f"{self.base}/admin/modeladmin/{model._meta.app_label}/{model._meta.model_name}/edit/{instance_id}/"
     
-    def get_delete_url(self, model, instance_id, custom_url_path=None):
+    def get_delete_url(self, model, instance_id, custom_url_path=None) -> str:
         """Get the delete URL for a modeladmin instance"""
         if custom_url_path:
             # Use the custom URL path for delete URLs
@@ -105,7 +95,7 @@ class ModelAdminHelper:
             # Use the default modeladmin URL pattern for delete URLs
             return f"{self.base}/admin/modeladmin/{model._meta.app_label}/{model._meta.model_name}/delete/{instance_id}/"
     
-    def collect_urls(self):
+    def collect_urls(self) -> List[Tuple[str, Optional[str], str, str]]:
         """Collect all modeladmin URLs"""
         # Get modeladmin models
         modeladmin_models = self.get_modeladmin_models()
@@ -114,7 +104,7 @@ class ModelAdminHelper:
         modeladmin_url_paths = self.get_modeladmin_url_paths()
         
         for model in modeladmin_models:
-            model_name = f"{model._meta.app_label}.{model._meta.model_name}"
+            model_name = self.get_model_name(model)
 
             # Check if model has any instances
             has_instances = model_has_instances(self.output, model)
@@ -125,7 +115,7 @@ class ModelAdminHelper:
             list_url = self.get_list_url(model, custom_url_path)
 
             if has_instances:
-                self.urls.append(format_url_tuple(model_name, None, "list", list_url))
+                self.add_list_url(model_name, list_url)
 
                 # Add edit URLs for actual instances
                 instances = get_instance_sample(self.output, model, self.max_instances)
@@ -133,28 +123,19 @@ class ModelAdminHelper:
                     instance_name = truncate_instance_name(str(instance))
 
                     edit_url = self.get_edit_url(model, instance.id, custom_url_path)
-                    delete_url = self.get_delete_url(model, instance.id, custom_url_path)
-
-                    self.urls.append(
-                        format_url_tuple(model_name, instance_name, "edit", edit_url)
-                    )
+                    self.add_edit_url(model_name, instance_name, edit_url)
+                    
                     # Add delete URL for each instance
-                    self.urls.append(
-                        format_url_tuple(model_name, instance_name, "delete", delete_url)
-                    )
+                    delete_url = self.get_delete_url(model, instance.id, custom_url_path)
+                    self.add_delete_url(model_name, instance_name, delete_url)
             else:
                 # For models with no instances, always show the list URL with a note
-                if hasattr(self.output, "style"):
-                    self.output.write(self.output.style.INFO(f"Note: {model_name} has no instances"))
-                else:
-                    self.output.write(f"Note: {model_name} has no instances")
-                self.urls.append(
-                    format_url_tuple(f"{model_name} (NO INSTANCES)", None, "list", list_url)
-                )
+                self.write_no_instances_message(model_name)
+                self.add_url_for_model_with_no_instances(model_name, list_url)
         
         return self.urls
     
-    def modeladmin_urls(self):
+    def modeladmin_urls(self) -> List[Tuple[str, Optional[str], str, str]]:
         """Return all modeladmin URLs"""
         return self.collect_urls()
 

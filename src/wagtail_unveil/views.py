@@ -76,49 +76,49 @@ class UnveilReportView(ReportView):
         # Collect page URLs
         page_helper = PageHelper(output, base_url, max_instances)
         page_urls = page_helper.page_urls()
-        for model_name, url_type, url in page_urls:
-            all_urls.append(UrlEntry(counter, model_name, url_type, url))
+        for display_name, instance_name, url_type, url in page_urls:
+            all_urls.append(UrlEntry(counter, display_name, url_type, url))
             counter += 1
         
         # Get snippet models and collect snippet URLs
         snippet_helper = SnippetHelper(output, base_url, max_instances)
         snippet_urls = snippet_helper.snippet_urls()
-        for model_name, url_type, url in snippet_urls:
-            all_urls.append(UrlEntry(counter, model_name, url_type, url))
+        for display_name, instance_name, url_type, url in snippet_urls:
+            all_urls.append(UrlEntry(counter, display_name, url_type, url))
             counter += 1
         
         # Get ModelViewSet URLs using the ModelViewSetHelper class
         modelviewset_helper = ModelViewSetHelper(output, base_url, max_instances)
         modelviewset_urls = modelviewset_helper.modelviewset_urls()
-        for model_name, url_type, url in modelviewset_urls:
-            all_urls.append(UrlEntry(counter, model_name, url_type, url))
+        for display_name, instance_name, url_type, url in modelviewset_urls:
+            all_urls.append(UrlEntry(counter, display_name, url_type, url))
             counter += 1
         
         # Get modeladmin models and collect modeladmin URLs
         modeladmin_helper = ModelAdminHelper(output, base_url, max_instances)
         modeladmin_urls = modeladmin_helper.modeladmin_urls()
-        for model_name, url_type, url in modeladmin_urls:
-            all_urls.append(UrlEntry(counter, model_name, url_type, url))
+        for display_name, instance_name, url_type, url in modeladmin_urls:
+            all_urls.append(UrlEntry(counter, display_name, url_type, url))
             counter += 1
         
         # Collect settings URLs
         settings_urls = get_settings_admin_urls(output, base_url)
-        for model_name, url_type, url in settings_urls:
-            all_urls.append(UrlEntry(counter, model_name, url_type, url))
+        for display_name, instance_name, url_type, url in settings_urls:
+            all_urls.append(UrlEntry(counter, display_name, url_type, url))
             counter += 1
         
         # Get image URLs
         image_helper = ImageHelper(output, base_url, max_instances)
         image_urls = image_helper.image_urls()
-        for model_name, url_type, url in image_urls:
-            all_urls.append(UrlEntry(counter, model_name, url_type, url))
+        for display_name, instance_name, url_type, url in image_urls:
+            all_urls.append(UrlEntry(counter, display_name, url_type, url))
             counter += 1
             
         # Get document URLs
         document_helper = DocumentHelper(output, base_url, max_instances)
         document_urls = document_helper.document_urls()
-        for model_name, url_type, url in document_urls:
-            all_urls.append(UrlEntry(counter, model_name, url_type, url))
+        for display_name, instance_name, url_type, url in document_urls:
+            all_urls.append(UrlEntry(counter, display_name, url_type, url))
             counter += 1
             
         return all_urls

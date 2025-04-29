@@ -1,5 +1,7 @@
+from dataclasses import dataclass, field
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import DatabaseError, OperationalError
+from typing import Any, List, Optional, Tuple
 
 
 def safe_query(
@@ -138,7 +140,7 @@ def format_url_tuple(model_name, instance_name=None, url_type="list", url=None):
     if instance_name:
         display_name = f"{model_name} ({instance_name})"
 
-    return (display_name, url_type, url)
+    return (display_name, instance_name, url_type, url)
 
 
 def truncate_instance_name(instance_name, max_length=50):
@@ -155,3 +157,55 @@ def truncate_instance_name(instance_name, max_length=50):
     if len(instance_name) > max_length:
         return instance_name[: max_length - 3] + "..."
     return instance_name
+
+
+@dataclass
+class BaseHelper:
+    """
+    A base dataclass that encapsulates common helper functionality.
+    All specific helpers should inherit from this class.
+    """
+    output: Any
+    base_url: str
+    max_instances: int
+    urls: List[Tuple[str, Optional[str], str, str]] = field(default_factory=list)
+    
+    def __post_init__(self):
+        """Strip trailing slash from base_url"""
+        self.base = self.base_url.rstrip("/")
+    
+    def get_model_name(self, model) -> str:
+        """Get the full name of a model"""
+        return f"{model._meta.app_label}.{model._meta.model_name}"
+    
+    def write_no_instances_message(self, model_name: str) -> None:
+        """Write a message indicating a model has no instances"""
+        if hasattr(self.output, "style"):
+            self.output.write(self.output.style.INFO(f"Note: {model_name} has no instances"))
+        else:
+            self.output.write(f"Note: {model_name} has no instances")
+    
+    def add_url_for_model_with_no_instances(self, model_name: str, list_url: str) -> None:
+        """Add a list URL for a model with no instances"""
+        self.urls.append(
+            format_url_tuple(f"{model_name} (NO INSTANCES)", None, "list", list_url)
+        )
+    
+    def add_list_url(self, model_name: str, list_url: str) -> None:
+        """Add a list URL for a model"""
+        self.urls.append(format_url_tuple(model_name, None, "list", list_url))
+    
+    def add_edit_url(self, model_name: str, instance_name: str, edit_url: str) -> None:
+        """Add an edit URL for a model instance"""
+        self.urls.append(format_url_tuple(model_name, instance_name, "edit", edit_url))
+    
+    def add_delete_url(self, model_name: str, instance_name: str, delete_url: str) -> None:
+        """Add a delete URL for a model instance"""
+        self.urls.append(format_url_tuple(model_name, instance_name, "delete", delete_url))
+    
+    def collect_urls(self) -> List[Tuple[str, Optional[str], str, str]]:
+        """
+        Abstract method that should be implemented by subclasses.
+        Collects all admin URLs relevant to the specific helper.
+        """
+        raise NotImplementedError("Subclasses must implement collect_urls method")

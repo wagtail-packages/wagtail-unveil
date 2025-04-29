@@ -1,29 +1,20 @@
-from dataclasses import dataclass, field
-from typing import Any, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 from wagtail.models import get_page_models
 
 from .base import (
-    format_url_tuple,
+    BaseHelper,
     get_instance_sample,
     model_has_instances,
     truncate_instance_name,
 )
 
 
-@dataclass
-class PageHelper:
+class PageHelper(BaseHelper):
     """
     A dataclass that encapsulates page helper functionality.
     Developers can inherit from this class to extend its functionality.
     """
-    output: Any
-    base_url: str
-    max_instances: int
-    urls: List[Tuple[str, Optional[str], str, str]] = field(default_factory=list)
-    
-    def __post_init__(self):
-        self.base = self.base_url.rstrip("/")
     
     def get_edit_url(self, instance_id: int) -> str:
         """Get the edit URL for a page instance"""
@@ -55,10 +46,9 @@ class PageHelper:
     
     def collect_urls(self) -> List[Tuple[str, Optional[str], str, str]]:
         """Collect all page admin URLs"""
-        urls = []
         
         for model in get_page_models():
-            model_name = f"{model._meta.app_label}.{model._meta.model_name}"
+            model_name = self.get_model_name(model)
             
             # Check if model has any instances
             has_instances = model_has_instances(self.output, model)
@@ -75,38 +65,24 @@ class PageHelper:
                     
                     # Add admin edit URL
                     edit_url = self.get_edit_url(instance.id)
-                    urls.append(
-                        format_url_tuple(model_name, instance_name, "edit", edit_url)
-                    )
+                    self.add_edit_url(model_name, instance_name, edit_url)
                     
                     # Add delete URL for each page
                     delete_url = self.get_delete_url(instance.id)
-                    urls.append(
-                        format_url_tuple(model_name, instance_name, "delete", delete_url)
-                    )
+                    self.add_delete_url(model_name, instance_name, delete_url)
                     
                     # Add frontend URL if the page has one
                     frontend_url = self.get_frontend_url(instance)
                     if frontend_url:
-                        urls.append(
-                            format_url_tuple(
-                                model_name, instance_name, "frontend", frontend_url
-                            )
+                        self.urls.append(
+                            (f"{model_name} ({instance_name})", instance_name, "frontend", frontend_url)
                         )
             else:
                 # For models with no instances, always show the list URL with a note
-                if hasattr(self.output, "style"):
-                    self.output.write(self.output.style.INFO(f"Note: {model_name} has no instances"))
-                else:
-                    self.output.write(f"Note: {model_name} has no instances")
-                urls.append(
-                    format_url_tuple(
-                        f"{model_name} (NO INSTANCES)", None, "list", self.get_list_url()
-                    )
-                )
+                self.write_no_instances_message(model_name)
+                self.add_url_for_model_with_no_instances(model_name, self.get_list_url())
         
-        self.urls = urls
-        return urls
+        return self.urls
     
     def page_urls(self) -> List[Tuple[str, Optional[str], str, str]]:
         """Return all page URLs"""

@@ -1,30 +1,21 @@
-from dataclasses import dataclass, field
-from typing import Any, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 from django.contrib.contenttypes.models import ContentType
 from wagtail.snippets.models import get_snippet_models
 
 from .base import (
-    format_url_tuple,
+    BaseHelper,
     get_instance_sample,
     model_has_instances,
     truncate_instance_name,
 )
 
 
-@dataclass
-class SnippetHelper:
+class SnippetHelper(BaseHelper):
     """
     A dataclass that encapsulates snippet helper functionality.
     Developers can inherit from this class to extend its functionality.
     """
-    output: Any
-    base_url: str
-    max_instances: int
-    urls: List[Tuple[str, Optional[str], str, str]] = field(default_factory=list)
-    
-    def __post_init__(self):
-        self.base = self.base_url.rstrip("/")
     
     def get_list_url(self, content_type) -> str:
         """Get the list URL for a snippet model"""
@@ -41,7 +32,7 @@ class SnippetHelper:
     def collect_urls(self) -> List[Tuple[str, Optional[str], str, str]]:
         """Collect all snippet admin URLs"""
         for model in get_snippet_models():
-            model_name = f"{model._meta.app_label}.{model._meta.model_name}"
+            model_name = self.get_model_name(model)
             content_type = ContentType.objects.get_for_model(model)
             
             # Check if model has any instances
@@ -51,27 +42,22 @@ class SnippetHelper:
             list_url = self.get_list_url(content_type)
             
             if has_instances:
-                self.urls.append(format_url_tuple(model_name, None, "list", list_url))
+                self.add_list_url(model_name, list_url)
                 
                 # Add edit URLs for actual instances
                 instances = get_instance_sample(self.output, model, self.max_instances)
                 for instance in instances:
                     instance_name = truncate_instance_name(str(instance))
                     edit_url = self.get_edit_url(content_type, instance.id)
-                    self.urls.append(format_url_tuple(model_name, instance_name, "edit", edit_url))
+                    self.add_edit_url(model_name, instance_name, edit_url)
                     
                     # Add delete URL for each instance
                     delete_url = self.get_delete_url(content_type, instance.id)
-                    self.urls.append(format_url_tuple(model_name, instance_name, "delete", delete_url))
+                    self.add_delete_url(model_name, instance_name, delete_url)
             else:
                 # For models with no instances, always show the list URL with a note
-                if hasattr(self.output, "style"):
-                    self.output.write(self.output.style.INFO(f"Note: {model_name} has no instances"))
-                else:
-                    self.output.write(f"Note: {model_name} has no instances")
-                self.urls.append(
-                    format_url_tuple(f"{model_name} (NO INSTANCES)", None, "list", list_url)
-                )
+                self.write_no_instances_message(model_name)
+                self.add_url_for_model_with_no_instances(model_name, list_url)
         
         return self.urls
     
