@@ -24,7 +24,7 @@ from wagtail_unveil.helpers.snippet_helpers import (
 )
 from wagtail_unveil.helpers.modelviewset_helpers import (
     get_modelviewset_models,
-    get_modelviewset_urls,
+    ModelViewSetHelper,
 )
 
 
@@ -187,11 +187,12 @@ class Command(BaseCommand):
             self.stdout.write(f"  - {model.__name__}")
 
         # Get URLs for modelviewset models
-        modelviewset_urls = get_modelviewset_urls(
+        modelviewset_helper = ModelViewSetHelper(
             self.stdout,
             base_url,
             max_instances,
         )
+        modelviewset_urls = modelviewset_helper.modelviewset_urls()
         urls.extend(modelviewset_urls)
 
         # Get image admin URLs

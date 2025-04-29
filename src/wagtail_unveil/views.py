@@ -6,7 +6,7 @@ from django.conf import settings
 
 from .helpers.page_helpers import PageHelper
 from .helpers.snippet_helpers import SnippetHelper
-from .helpers.modelviewset_helpers import get_modelviewset_urls
+from .helpers.modelviewset_helpers import ModelViewSetHelper
 from .helpers.modeladmin_helpers import get_modeladmin_urls
 from .helpers.settings_helpers import get_settings_admin_urls
 from .helpers.image_helpers import ImageHelper
@@ -87,8 +87,9 @@ class UnveilReportView(ReportView):
             all_urls.append(UrlEntry(counter, model_name, url_type, url))
             counter += 1
         
-        # Create an empty dictionary for URL paths since we no longer get it from get_modelviewset_models()
-        modelviewset_urls = get_modelviewset_urls(output, base_url, max_instances)
+        # Get ModelViewSet URLs using the ModelViewSetHelper class
+        modelviewset_helper = ModelViewSetHelper(output, base_url, max_instances)
+        modelviewset_urls = modelviewset_helper.modelviewset_urls()
         for model_name, url_type, url in modelviewset_urls:
             all_urls.append(UrlEntry(counter, model_name, url_type, url))
             counter += 1

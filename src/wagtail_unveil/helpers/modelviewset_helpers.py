@@ -1,5 +1,7 @@
 import inspect
+from dataclasses import dataclass, field
 from importlib import import_module
+from typing import Any, List, Optional, Tuple
 
 from django.apps import apps
 
@@ -37,104 +39,112 @@ def get_modelviewset_models():
     return modelviewset_models
 
 
-def get_modelviewset_urls(
-    output, base_url, max_instances
-):
-    """Get admin URLs for models registered with ModelViewSet"""
-    urls = []
-    base = base_url.rstrip("/")
-
-    # Get the models inside the function instead of receiving them as a parameter
-    modelviewset_models = get_modelviewset_models()
-
-    # Models that should be skipped because they're already included in settings
-    skip_models = ["wagtailcore.locale", "wagtailcore.site"]
-
-    for model in modelviewset_models:
-        model_name = f"{model._meta.app_label}.{model._meta.model_name}"
-
-        # Skip models that are already covered by settings admin URLs
-        if model_name in skip_models:
-            output.write(
-                f"Skipping duplicate {model_name} URLs - already included in settings section"
-            )
-            continue
-
-        # Check if model has any instances
-        has_instances = model_has_instances(output, model)
-
+@dataclass
+class ModelViewSetHelper:
+    """
+    A dataclass that encapsulates ModelViewSet helper functionality.
+    Developers can inherit from this class to extend its functionality.
+    """
+    output: Any
+    base_url: str
+    max_instances: int
+    urls: List[Tuple[str, Optional[str], str, str]] = field(default_factory=list)
+    
+    def __post_init__(self):
+        self.base = self.base_url.rstrip("/")
+        # Models that should be skipped because they're already included in settings
+        self.skip_models = ["wagtailcore.locale", "wagtailcore.site"]
+    
+    def get_list_url(self, model) -> str:
+        """Get the list URL for a model"""
+        model_name = model._meta.model_name
+        
         # Special case for 'wagtailcore.locale' to use plural 'locales' in URL
-        if model_name == "wagtailcore.locale":
-            # Add list URL with correct plural form
-            list_url = f"{base}/admin/locales/"
-
+        if f"{model._meta.app_label}.{model._meta.model_name}" == "wagtailcore.locale":
+            return f"{self.base}/admin/locales/"
+        
+        return f"{self.base}/admin/{model_name}/"
+    
+    def get_edit_url(self, model, instance_id: int) -> str:
+        """Get the edit URL for a model instance"""
+        model_name = model._meta.model_name
+        
+        # Special case for 'wagtailcore.locale' to use plural 'locales' in URL
+        if f"{model._meta.app_label}.{model._meta.model_name}" == "wagtailcore.locale":
+            return f"{self.base}/admin/locales/{instance_id}/"
+        
+        return f"{self.base}/admin/{model_name}/{instance_id}/"
+    
+    def get_delete_url(self, model, instance_id: int) -> str:
+        """Get the delete URL for a model instance"""
+        model_name = model._meta.model_name
+        
+        # Special case for 'wagtailcore.locale' to use plural 'locales' in URL
+        if f"{model._meta.app_label}.{model._meta.model_name}" == "wagtailcore.locale":
+            return f"{self.base}/admin/locales/{instance_id}/delete/"
+        
+        return f"{self.base}/admin/{model_name}/{instance_id}/delete/"
+    
+    def collect_urls(self) -> List[Tuple[str, Optional[str], str, str]]:
+        """Get admin URLs for models registered with ModelViewSet"""
+        # Get the models
+        modelviewset_models = get_modelviewset_models()
+        
+        for model in modelviewset_models:
+            model_name = f"{model._meta.app_label}.{model._meta.model_name}"
+            
+            # Skip models that are already covered by settings admin URLs
+            if model_name in self.skip_models:
+                self.output.write(
+                    f"Skipping duplicate {model_name} URLs - already included in settings section"
+                )
+                continue
+            
+            # Check if model has any instances
+            has_instances = model_has_instances(self.output, model)
+            
+            # Add list URL
+            list_url = self.get_list_url(model)
+            
             if has_instances:
-                urls.append(format_url_tuple(model_name, None, "list", list_url))
-
-                # Add edit URLs for actual instances with correct plural form
-                instances = get_instance_sample(output, model, max_instances)
+                self.urls.append(format_url_tuple(model_name, None, "list", list_url))
+                
+                # Add edit URLs for actual instances
+                instances = get_instance_sample(self.output, model, self.max_instances)
                 for instance in instances:
                     instance_name = truncate_instance_name(str(instance))
-
-                    # Use correct plural "locales" for edit URL
-                    edit_url = f"{base}/admin/locales/{instance.id}/"
-                    urls.append(
+                    
+                    # Add edit URL
+                    edit_url = self.get_edit_url(model, instance.id)
+                    self.urls.append(
                         format_url_tuple(model_name, instance_name, "edit", edit_url)
                     )
                     
-                    # Add delete URL with correct plural form
-                    delete_url = f"{base}/admin/locales/{instance.id}/delete/"
-                    urls.append(
+                    # Add delete URL
+                    delete_url = self.get_delete_url(model, instance.id)
+                    self.urls.append(
                         format_url_tuple(model_name, instance_name, "delete", delete_url)
                     )
             else:
                 # For models with no instances, always show the list URL with a note
-                if hasattr(output, "style"):
-                    output.write(
-                        output.style.INFO(f"Note: {model_name} has no instances")
+                if hasattr(self.output, "style"):
+                    self.output.write(
+                        self.output.style.INFO(f"Note: {model_name} has no instances")
                     )
                 else:
-                    output.write(f"Note: {model_name} has no instances")
-                urls.append(
-                    format_url_tuple(
-                        f"{model_name} (NO INSTANCES)", None, "list", list_url
-                    )
+                    self.output.write(f"Note: {model_name} has no instances")
+                self.urls.append(
+                    format_url_tuple(f"{model_name} (NO INSTANCES)", None, "list", list_url)
                 )
+        
+        return self.urls
+    
+    def modelviewset_urls(self) -> List[Tuple[str, Optional[str], str, str]]:
+        """Return all ModelViewSet URLs"""
+        return self.collect_urls()
 
-            # Skip the rest of the loop for the locale model since we handled it specially
-            continue
 
-        # Normal handling for all other models
-        # Add list URL - ModelViewSet URLs use just the model_name, not app_label/model_name
-        list_url = f"{base}/admin/{model._meta.model_name}/"
-
-        if has_instances:
-            urls.append(format_url_tuple(model_name, None, "list", list_url))
-
-            # Add edit URLs for actual instances
-            instances = get_instance_sample(output, model, max_instances)
-            for instance in instances:
-                instance_name = truncate_instance_name(str(instance))
-
-                # ModelViewSet edit URLs also use just the model_name
-                edit_url = f"{base}/admin/{model._meta.model_name}/{instance.id}/"
-                urls.append(
-                    format_url_tuple(model_name, instance_name, "edit", edit_url)
-                )
-                
-                # Add delete URL for each instance
-                delete_url = f"{base}/admin/{model._meta.model_name}/{instance.id}/delete/"
-                urls.append(
-                    format_url_tuple(model_name, instance_name, "delete", delete_url)
-                )
-        else:
-            # For models with no instances, always show the list URL with a note
-            if hasattr(output, "style"):
-                output.write(output.style.INFO(f"Note: {model_name} has no instances"))
-            else:
-                output.write(f"Note: {model_name} has no instances")
-            urls.append(
-                format_url_tuple(f"{model_name} (NO INSTANCES)", None, "list", list_url)
-            )
-
-    return urls
+def get_modelviewset_urls(output, base_url, max_instances):
+    """Get admin URLs for models registered with ModelViewSet (legacy function)"""
+    helper = ModelViewSetHelper(output, base_url, max_instances)
+    return helper.modelviewset_urls()
