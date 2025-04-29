@@ -13,32 +13,6 @@ from .base import (
 )
 
 
-def get_modelviewset_models():
-    """
-    Find models registered with ModelViewSet
-    This is a bit more complex since we need to inspect the wagtail_hooks modules
-    """
-    modelviewset_models = []
-
-    # Look for apps with wagtail_hooks module
-    for app_config in apps.get_app_configs():
-        try:
-            hooks_module = import_module(f"{app_config.name}.wagtail_hooks")
-            # Look for ModelViewSet classes
-            for name, obj in inspect.getmembers(hooks_module):
-                if inspect.isclass(obj):
-                    # Check if this is a ModelViewSet class
-                    if hasattr(obj, "model") and "ModelViewSet" in str(obj.__bases__):
-                        # Only add the model if it's not None
-                        if obj.model is not None:
-                            modelviewset_models.append(obj.model)
-        except (ImportError, ModuleNotFoundError):
-            # App doesn't have wagtail_hooks module
-            pass
-
-    return modelviewset_models
-
-
 @dataclass
 class ModelViewSetHelper:
     """
@@ -54,6 +28,31 @@ class ModelViewSetHelper:
         self.base = self.base_url.rstrip("/")
         # Models that should be skipped because they're already included in settings
         self.skip_models = ["wagtailcore.locale", "wagtailcore.site"]
+    
+    def get_modelviewset_models(self):
+        """
+        Find models registered with ModelViewSet
+        This is a bit more complex since we need to inspect the wagtail_hooks modules
+        """
+        modelviewset_models = []
+
+        # Look for apps with wagtail_hooks module
+        for app_config in apps.get_app_configs():
+            try:
+                hooks_module = import_module(f"{app_config.name}.wagtail_hooks")
+                # Look for ModelViewSet classes
+                for name, obj in inspect.getmembers(hooks_module):
+                    if inspect.isclass(obj):
+                        # Check if this is a ModelViewSet class
+                        if hasattr(obj, "model") and "ModelViewSet" in str(obj.__bases__):
+                            # Only add the model if it's not None
+                            if obj.model is not None:
+                                modelviewset_models.append(obj.model)
+            except (ImportError, ModuleNotFoundError):
+                # App doesn't have wagtail_hooks module
+                pass
+
+        return modelviewset_models
     
     def get_list_url(self, model) -> str:
         """Get the list URL for a model"""
@@ -142,3 +141,13 @@ class ModelViewSetHelper:
     def modelviewset_urls(self) -> List[Tuple[str, Optional[str], str, str]]:
         """Return all ModelViewSet URLs"""
         return self.collect_urls()
+
+
+# Legacy wrapper for backward compatibility
+def get_modelviewset_models():
+    """
+    Legacy wrapper for backward compatibility.
+    Find models registered with ModelViewSet.
+    """
+    helper = ModelViewSetHelper(output=None, base_url="", max_instances=0)
+    return helper.get_modelviewset_models()
