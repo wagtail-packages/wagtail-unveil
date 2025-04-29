@@ -1,46 +1,48 @@
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import DatabaseError, OperationalError
 from wagtail.models import Page, Site
+from dataclasses import dataclass
+from typing import List, Tuple, Optional, Set
 
-from .base import format_url_tuple
+from .base import BaseHelper, format_url_tuple
 
 
-def get_site_urls(output, base_url):
-    """Get URLs for site default pages"""
-    urls = []
-
-    try:
-        # Get all sites configured in Wagtail
-        sites = Site.objects.all()
-
-        # Keep track of URLs we've already added to avoid duplicates
-        added_frontend_urls = set()
-
-        # Add the general pages listing URL
-        base = base_url.rstrip("/")
-        pages_listing_url = f"{base}/admin/pages/"
-        urls.append(
+@dataclass
+class SiteHelper(BaseHelper):
+    """Helper for collecting site-related admin URLs"""
+    added_frontend_urls: Set[str] = None
+    
+    def __post_init__(self):
+        super().__post_init__()
+        if self.added_frontend_urls is None:
+            self.added_frontend_urls = set()
+    
+    def add_general_pages_listing_url(self):
+        """Add the general pages listing URL"""
+        pages_listing_url = f"{self.base}/admin/pages/"
+        self.urls.append(
             format_url_tuple("All Pages Listing", None, "list", pages_listing_url)
         )
-
-        # Add the search URLs - one with no results, one with results
-        empty_search_url = f"{base}/admin/pages/search/?q=xyznonexistentsearchterm123"
-        urls.append(
+    
+    def add_search_urls(self):
+        """Add the search URLs - one with no results, one with results"""
+        # Add URL with no results
+        empty_search_url = f"{self.base}/admin/pages/search/?q=xyznonexistentsearchterm123"
+        self.urls.append(
             format_url_tuple("Page Search (No Results)", None, "list", empty_search_url)
         )
-
-        # Get a search term dynamically from the title of any existing page
-        # This ensures it will work on any site
+        
+        # Add URL with results
         try:
             home_page = Page.objects.filter(depth=2).first()
             if home_page:
                 # Extract a single word from the title that's likely to match
                 title_word = home_page.title.split()[0]
-                result_search_url = f"{base}/admin/pages/search/?q={title_word}"
+                result_search_url = f"{self.base}/admin/pages/search/?q={title_word}"
                 result_description = f"Page Search (With Results - '{title_word}')"
             else:
                 # Fallback to a common word that's likely to be in any page
-                result_search_url = f"{base}/admin/pages/search/?q=page"
+                result_search_url = f"{self.base}/admin/pages/search/?q=page"
                 result_description = "Page Search (With Results - 'page')"
         except (
             AttributeError,
@@ -49,68 +51,90 @@ def get_site_urls(output, base_url):
             OperationalError,
             IndexError,
         ) as e:
-            # Ultimate fallback if we can't query the database, with specific exceptions
-            result_search_url = f"{base}/admin/pages/search/?q=the"
+            # Ultimate fallback if we can't query the database
+            result_search_url = f"{self.base}/admin/pages/search/?q=the"
             result_description = f"Page Search (With Results - 'the') (Error: {str(e)})"
-
-        urls.append(
+        
+        self.urls.append(
             format_url_tuple(result_description, None, "list", result_search_url)
         )
-
-        for site in sites:
-            # Get the root page for this site
-            root_page = site.root_page
-
-            # Add frontend URL - use base URL directly for the homepage
-            # Strip trailing slash from base_url to ensure consistent formatting
-            base = base_url.rstrip("/")
-
-            # For the root page, just use the base URL as the site URL
-            site_url = f"{base}/"
-
-            # Only add the frontend URL if we haven't added it yet
-            if site_url not in added_frontend_urls:
-                urls.append(
-                    format_url_tuple("Site default page", None, "frontend", site_url)
-                )
-                added_frontend_urls.add(site_url)
-
-            # Always add admin edit URLs for each root page
-            admin_url = f"{base}/admin/pages/{root_page.id}/edit/"
-            urls.append(
-                format_url_tuple(
-                    "Site default page", root_page.title, "edit", admin_url
-                )
+    
+    def add_site_urls(self, site: Site):
+        """Add URLs for a specific site"""
+        # Get the root page for this site
+        root_page = site.root_page
+        
+        # Add frontend URL - use base URL directly for the homepage
+        site_url = f"{self.base}/"
+        
+        # Only add the frontend URL if we haven't added it yet
+        if site_url not in self.added_frontend_urls:
+            self.urls.append(
+                format_url_tuple("Site default page", None, "frontend", site_url)
             )
+            self.added_frontend_urls.add(site_url)
+        
+        # Always add admin edit URL for the root page
+        admin_url = f"{self.base}/admin/pages/{root_page.id}/edit/"
+        self.urls.append(
+            format_url_tuple(
+                "Site default page", root_page.title, "edit", admin_url
+            )
+        )
+        
+        # Add delete URL for the root page
+        delete_url = f"{self.base}/admin/pages/{root_page.id}/delete/"
+        self.urls.append(
+            format_url_tuple(
+                "Site default page", root_page.title, "delete", delete_url
+            )
+        )
+        
+        # Add the specific page explorer URL for the root page
+        explorer_url = f"{self.base}/admin/pages/{root_page.id}/"
+        self.urls.append(
+            format_url_tuple(
+                "Site default page explorer", root_page.title, "list", explorer_url
+            )
+        )
+        
+        # If this is the default site, also add the admin dashboard URL
+        if site.is_default_site:
+            dashboard_url = f"{self.base}/admin/"
+            self.urls.append(
+                format_url_tuple("Admin dashboard", None, "admin", dashboard_url)
+            )
+    
+    def collect_urls(self) -> List[Tuple[str, Optional[str], str, str]]:
+        """Collect all site-related admin URLs"""
+        try:
+            # Get all sites configured in Wagtail
+            sites = Site.objects.all()
             
-            # Add delete URL for the root page
-            delete_url = f"{base}/admin/pages/{root_page.id}/delete/"
-            urls.append(
-                format_url_tuple(
-                    "Site default page", root_page.title, "delete", delete_url
-                )
-            )
+            # Add common URLs
+            self.add_general_pages_listing_url()
+            self.add_search_urls()
+            
+            # Add URLs for each site
+            for site in sites:
+                self.add_site_urls(site)
+                
+        except (
+            AttributeError,
+            ObjectDoesNotExist,
+            DatabaseError,
+            OperationalError,
+        ) as e:
+            if hasattr(self.output, "style"):
+                self.output.write(self.output.style.WARNING(f"Error getting site URLs: {str(e)}"))
+            else:
+                self.output.write(f"Error getting site URLs: {str(e)}")
+                
+        return self.urls
 
-            # Add the specific page explorer URL for the root page
-            explorer_url = f"{base}/admin/pages/{root_page.id}/"
-            urls.append(
-                format_url_tuple(
-                    "Site default page explorer", root_page.title, "list", explorer_url
-                )
-            )
 
-            # If this is the default site, also add the admin dashboard URL
-            if site.is_default_site:
-                dashboard_url = f"{base}/admin/"
-                urls.append(
-                    format_url_tuple("Admin dashboard", None, "admin", dashboard_url)
-                )
-    except (
-        AttributeError,
-        ObjectDoesNotExist,
-        DatabaseError,
-        OperationalError,
-    ) as e:
-        output.write(output.style.WARNING(f"Error getting site URLs: {str(e)}"))
-
-    return urls
+# Keep the original function for backward compatibility
+def get_site_urls(output, base_url):
+    """Get URLs for site default pages"""
+    helper = SiteHelper(output=output, base_url=base_url, max_instances=1)
+    return helper.collect_urls()
