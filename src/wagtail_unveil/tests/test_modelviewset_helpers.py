@@ -4,11 +4,13 @@ from unittest.mock import Mock, patch
 
 from wagtail_unveil.helpers.modelviewset_helpers import (
     get_modelviewset_models,
-    get_modelviewset_urls,
+    ModelViewSetHelper,
 )
 
 
 class GetModelViewsetModelsTests(TestCase):
+    """Tests for the get_modelviewset_models function."""
+    
     @patch('wagtail_unveil.helpers.modelviewset_helpers.import_module')
     @patch('wagtail_unveil.helpers.modelviewset_helpers.apps')
     def test_get_modelviewset_models(self, mock_apps, mock_import_module):
@@ -108,8 +110,11 @@ class GetModelViewsetModelsTests(TestCase):
         self.assertEqual(models, [])
 
 
-class GetModelViewsetUrlsTests(TestCase):
+class ModelViewSetHelperTests(TestCase):
+    """Tests for the ModelViewSetHelper class."""
+    
     def setUp(self):
+        """Set up common test data."""
         self.output = StringIO()
         
         # Create mock models and instances
@@ -135,105 +140,143 @@ class GetModelViewsetUrlsTests(TestCase):
         self.base_url = "http://testserver"
         self.max_instances = 5
 
+    def test_initialization(self):
+        """Test ModelViewSetHelper initialization sets up the correct attributes."""
+        helper = ModelViewSetHelper(self.output, self.base_url, self.max_instances)
+        self.assertEqual(helper.base, self.base_url.rstrip('/'))
+        self.assertEqual(helper.skip_models, ["wagtailcore.locale", "wagtailcore.site"])
+        
+    def test_get_list_url(self):
+        """Test get_list_url returns the correct URL format for different models."""
+        helper = ModelViewSetHelper(self.output, self.base_url, self.max_instances)
+        
+        # Test regular model
+        self.assertEqual(
+            helper.get_list_url(self.mock_model1), 
+            "http://testserver/admin/model1/"
+        )
+        
+        # Test locale model (special case)
+        self.assertEqual(
+            helper.get_list_url(self.mock_model2), 
+            "http://testserver/admin/locales/"
+        )
+    
+    def test_get_edit_url(self):
+        """Test get_edit_url returns the correct URL format for different models."""
+        helper = ModelViewSetHelper(self.output, self.base_url, self.max_instances)
+        
+        # Test regular model
+        self.assertEqual(
+            helper.get_edit_url(self.mock_model1, 1), 
+            "http://testserver/admin/model1/1/"
+        )
+        
+        # Test locale model (special case)
+        self.assertEqual(
+            helper.get_edit_url(self.mock_model2, 1), 
+            "http://testserver/admin/locales/1/"
+        )
+    
+    def test_get_delete_url(self):
+        """Test get_delete_url returns the correct URL format for different models."""
+        helper = ModelViewSetHelper(self.output, self.base_url, self.max_instances)
+        
+        # Test regular model
+        self.assertEqual(
+            helper.get_delete_url(self.mock_model1, 1), 
+            "http://testserver/admin/model1/1/delete/"
+        )
+        
+        # Test locale model (special case)
+        self.assertEqual(
+            helper.get_delete_url(self.mock_model2, 1), 
+            "http://testserver/admin/locales/1/delete/"
+        )
+
     @patch('wagtail_unveil.helpers.modelviewset_helpers.get_modelviewset_models')
     @patch('wagtail_unveil.helpers.modelviewset_helpers.model_has_instances')
     @patch('wagtail_unveil.helpers.modelviewset_helpers.get_instance_sample')
-    def test_get_modelviewset_urls_with_instances(self, mock_get_instance_sample, mock_model_has_instances, mock_get_modelviewset_models):
-        """Test get_modelviewset_urls with models that have instances."""
+    @patch('wagtail_unveil.helpers.modelviewset_helpers.truncate_instance_name')
+    @patch('wagtail_unveil.helpers.modelviewset_helpers.format_url_tuple')
+    def test_collect_urls_with_instances(self, mock_format_url_tuple, mock_truncate_instance_name, 
+                                       mock_get_instance_sample, mock_model_has_instances, 
+                                       mock_get_modelviewset_models):
+        """Test collect_urls method when there are model instances."""
         # Set up the get_modelviewset_models mock to return our test models
-        mock_get_modelviewset_models.return_value = self.modelviewset_models
+        mock_get_modelviewset_models.return_value = [self.mock_model1]  # Only include non-skipped model
         
-        # Set up the model_has_instances mock to return True for both models
-        mock_model_has_instances.side_effect = [True, True]
+        # Set up the model_has_instances mock to return True
+        mock_model_has_instances.return_value = True
         
         # Set up the get_instance_sample mock to return instances
         mock_get_instance_sample.return_value = [self.mock_instance1, self.mock_instance2]
         
-        # Call the function
-        result = get_modelviewset_urls(
-            self.output, 
-            self.base_url, 
-            self.max_instances
-        )
+        # Set up the truncate_instance_name mock
+        mock_truncate_instance_name.side_effect = lambda x: f"Truncated {x}"
         
-        # Check the output - we should skip the locale model because it's in skip_models
-        self.assertIn("Skipping duplicate wagtailcore.locale URLs", self.output.getvalue())
+        # Set up the format_url_tuple mock to return input arguments
+        mock_format_url_tuple.side_effect = lambda model, instance_name, url_type, url: (
+            model, instance_name, url_type, url)
         
-        # We should only get URLs for the regular model (locale is skipped)
-        # 1 list URL + 2 edit URLs + 2 delete URLs = 5 URLs total
+        # Create helper and collect URLs
+        helper = ModelViewSetHelper(self.output, self.base_url, self.max_instances)
+        result = helper.collect_urls()
+        
+        # Check the results - should have list URL, edit URLs, and delete URLs
+        # 1 list URL + 2 edit URLs + 2 delete URLs = 5 URLs
         self.assertEqual(len(result), 5)
         
-        # Check list URL for regular model
-        self.assertIn(("app1.model1", "list", "http://testserver/admin/model1/"), result)
+        # Check list URL
+        mock_format_url_tuple.assert_any_call(
+            "app1.model1", None, "list", "http://testserver/admin/model1/")
         
-        # Check edit URLs for regular model
-        self.assertIn(("app1.model1 (Instance 1)", "edit", "http://testserver/admin/model1/1/"), result)
-        self.assertIn(("app1.model1 (Instance 2)", "edit", "http://testserver/admin/model1/2/"), result)
+        # Check edit URLs
+        mock_format_url_tuple.assert_any_call(
+            "app1.model1", "Truncated Instance 1", "edit", "http://testserver/admin/model1/1/")
+        mock_format_url_tuple.assert_any_call(
+            "app1.model1", "Truncated Instance 2", "edit", "http://testserver/admin/model1/2/")
         
-        # Check delete URLs for regular model
-        self.assertIn(("app1.model1 (Instance 1)", "delete", "http://testserver/admin/model1/1/delete/"), result)
-        self.assertIn(("app1.model1 (Instance 2)", "delete", "http://testserver/admin/model1/2/delete/"), result)
+        # Check delete URLs
+        mock_format_url_tuple.assert_any_call(
+            "app1.model1", "Truncated Instance 1", "delete", "http://testserver/admin/model1/1/delete/")
+        mock_format_url_tuple.assert_any_call(
+            "app1.model1", "Truncated Instance 2", "delete", "http://testserver/admin/model1/2/delete/")
 
     @patch('wagtail_unveil.helpers.modelviewset_helpers.get_modelviewset_models')
     @patch('wagtail_unveil.helpers.modelviewset_helpers.model_has_instances')
-    def test_get_modelviewset_urls_without_instances(self, mock_model_has_instances, mock_get_modelviewset_models):
-        """Test get_modelviewset_urls with models that have no instances."""
+    @patch('wagtail_unveil.helpers.modelviewset_helpers.format_url_tuple')
+    def test_collect_urls_without_instances(self, mock_format_url_tuple, 
+                                         mock_model_has_instances, mock_get_modelviewset_models):
+        """Test collect_urls method when there are no model instances."""
         # Set up the get_modelviewset_models mock to return our test models
-        mock_get_modelviewset_models.return_value = self.modelviewset_models
+        mock_get_modelviewset_models.return_value = [self.mock_model1]  # Only include non-skipped model
         
-        # Set up the model_has_instances mock to return False for both models
-        mock_model_has_instances.side_effect = [False, False]
+        # Set up the model_has_instances mock to return False
+        mock_model_has_instances.return_value = False
         
-        # Call the function
-        result = get_modelviewset_urls(
-            self.output, 
-            self.base_url, 
-            self.max_instances
-        )
+        # Set up the format_url_tuple mock to return input arguments
+        mock_format_url_tuple.side_effect = lambda model, instance_name, url_type, url: (
+            model, instance_name, url_type, url)
         
-        # Check the output - we should skip the locale model because it's in skip_models
-        self.assertIn("Skipping duplicate wagtailcore.locale URLs", self.output.getvalue())
+        # Create helper and collect URLs
+        helper = ModelViewSetHelper(self.output, self.base_url, self.max_instances)
+        result = helper.collect_urls()
         
-        # We should only get URLs for the regular model, without instances
-        self.assertEqual(len(result), 1)  # 1 list URL for the model without instances (locale is skipped)
+        # Check the results - should only have list URL with NO INSTANCES note
+        self.assertEqual(len(result), 1)
         
-        # Check list URL for model with no instances
-        self.assertIn(("app1.model1 (NO INSTANCES)", "list", "http://testserver/admin/model1/"), result)
-        
-        # Check the output message for models with no instances
+        # Verify the correct message was written to output
         self.assertIn("Note: app1.model1 has no instances", self.output.getvalue())
+        
+        # Check that the list URL was added with the correct format
+        mock_format_url_tuple.assert_called_once_with(
+            "app1.model1 (NO INSTANCES)", None, "list", "http://testserver/admin/model1/")
 
     @patch('wagtail_unveil.helpers.modelviewset_helpers.get_modelviewset_models')
     @patch('wagtail_unveil.helpers.modelviewset_helpers.model_has_instances')
-    @patch('wagtail_unveil.helpers.modelviewset_helpers.get_instance_sample')
-    def test_get_modelviewset_urls_with_custom_url_paths(self, mock_get_instance_sample, mock_model_has_instances, mock_get_modelviewset_models):
-        """Test get_modelviewset_urls with custom URL paths."""
-        # Set up the get_modelviewset_models mock to return just model1
-        mock_get_modelviewset_models.return_value = [self.mock_model1]
-        
-        # Set up other mocks
-        mock_model_has_instances.return_value = True
-        mock_get_instance_sample.return_value = [self.mock_instance1]
-        
-        # Call the function
-        result = get_modelviewset_urls(
-            self.output, 
-            self.base_url, 
-            self.max_instances
-        )
-        
-        # Check that we get the expected URLs with the custom path
-        self.assertEqual(len(result), 3)  # 1 list URL + 1 edit URL + 1 delete URL
-        
-        # The actual implementation doesn't use custom paths
-        # It always constructs URLs based on model name
-        self.assertIn(("app1.model1", "list", "http://testserver/admin/model1/"), result)
-        self.assertIn(("app1.model1 (Instance 1)", "edit", "http://testserver/admin/model1/1/"), result)
-        self.assertIn(("app1.model1 (Instance 1)", "delete", "http://testserver/admin/model1/1/delete/"), result)
-
-    @patch('wagtail_unveil.helpers.modelviewset_helpers.get_modelviewset_models')
-    def test_get_modelviewset_urls_with_skip_models(self, mock_get_modelviewset_models):
-        """Test get_modelviewset_urls skips models that are already covered by settings admin URLs."""
+    def test_collect_urls_with_skip_models(self, mock_model_has_instances, mock_get_modelviewset_models):
+        """Test that collect_urls skips models that are in the skip_models list."""
         # Create a mock model that should be skipped
         mock_skip_model = Mock()
         mock_skip_model._meta = Mock()
@@ -243,15 +286,48 @@ class GetModelViewsetUrlsTests(TestCase):
         # Set up the get_modelviewset_models mock to return the skip model
         mock_get_modelviewset_models.return_value = [mock_skip_model]
         
-        # Call the function
-        result = get_modelviewset_urls(
-            self.output, 
-            self.base_url, 
-            self.max_instances
-        )
+        # Create helper and collect URLs
+        helper = ModelViewSetHelper(self.output, self.base_url, self.max_instances)
+        result = helper.collect_urls()
         
         # Check the output message indicating the model was skipped
         self.assertIn("Skipping duplicate wagtailcore.site URLs", self.output.getvalue())
         
         # Check that we get no URLs because the model was skipped
         self.assertEqual(len(result), 0)
+
+    @patch('wagtail_unveil.helpers.modelviewset_helpers.get_modelviewset_models')
+    @patch('wagtail_unveil.helpers.modelviewset_helpers.model_has_instances')
+    def test_collect_urls_with_styled_output(self, mock_model_has_instances, mock_get_modelviewset_models):
+        """Test collect_urls method when output has style method."""
+        # Set up the get_modelviewset_models mock to return our test models
+        mock_get_modelviewset_models.return_value = [self.mock_model1]
+        
+        # Set up the model_has_instances mock to return False
+        mock_model_has_instances.return_value = False
+        
+        # Create a mock output object with style.INFO method
+        mock_output = Mock()
+        mock_output.style = Mock()
+        mock_output.style.INFO = lambda x: f"INFO: {x}"
+        mock_output.write = Mock()
+        
+        # Create helper and collect URLs
+        helper = ModelViewSetHelper(mock_output, self.base_url, self.max_instances)
+        helper.collect_urls()
+        
+        # Check that style.INFO was called correctly
+        mock_output.write.assert_any_call(mock_output.style.INFO("Note: app1.model1 has no instances"))
+
+    def test_modelviewset_urls_calls_collect_urls(self):
+        """Test modelviewset_urls method calls collect_urls."""
+        helper = ModelViewSetHelper(self.output, self.base_url, self.max_instances)
+        
+        # Mock the collect_urls method
+        helper.collect_urls = Mock(return_value=["url1", "url2"])
+        
+        result = helper.modelviewset_urls()
+        
+        # Verify collect_urls was called
+        helper.collect_urls.assert_called_once()
+        self.assertEqual(result, ["url1", "url2"])
