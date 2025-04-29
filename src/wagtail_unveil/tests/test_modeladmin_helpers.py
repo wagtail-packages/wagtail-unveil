@@ -169,8 +169,7 @@ class ModelAdminHelperTests(TestCase):
     @patch('wagtail_unveil.helpers.modeladmin_helpers.model_has_instances')
     @patch('wagtail_unveil.helpers.modeladmin_helpers.get_instance_sample')
     @patch('wagtail_unveil.helpers.modeladmin_helpers.truncate_instance_name')
-    @patch('wagtail_unveil.helpers.modeladmin_helpers.format_url_tuple')
-    def test_collect_urls_with_instances(self, mock_format_url_tuple, mock_truncate_instance_name,
+    def test_collect_urls_with_instances(self, mock_truncate_instance_name,
                                       mock_get_instance_sample, mock_model_has_instances):
         """Test collect_urls method when models have instances."""
         helper = ModelAdminHelper(self.output, self.base_url, self.max_instances)
@@ -179,49 +178,47 @@ class ModelAdminHelperTests(TestCase):
         helper.get_modeladmin_models = Mock(return_value=[self.mock_model])
         helper.get_modeladmin_url_paths = Mock(return_value={})
         
+        # Also mock the helper methods that add URLs
+        helper.add_list_url = Mock()
+        helper.add_edit_url = Mock()
+        helper.add_delete_url = Mock()
+        
         # Configure other mocks
         mock_model_has_instances.return_value = True
         mock_get_instance_sample.return_value = [self.mock_instance1, self.mock_instance2]
         mock_truncate_instance_name.side_effect = lambda x: f"Truncated {x}"
         
-        mock_format_url_tuple.side_effect = lambda model, instance_name, url_type, url: (
-            model, instance_name, url_type, url)
-        
         # Call collect_urls and check results
-        result = helper.collect_urls()
+        helper.collect_urls()
         
-        # Should have list URL plus edit and delete URLs for each instance
-        self.assertEqual(len(result), 5)  # 1 list URL + 2 instances * 2 URL types
-        
-        # Check that format_url_tuple was called correctly for list URL
-        mock_format_url_tuple.assert_any_call(
-            "testapp.testmodel", None, "list", 
+        # Verify add_list_url was called correctly
+        helper.add_list_url.assert_called_once_with(
+            "testapp.testmodel", 
             "http://testserver/admin/modeladmin/testapp/testmodel/"
         )
         
         # Check edit URLs
-        mock_format_url_tuple.assert_any_call(
-            "testapp.testmodel", "Truncated Test Instance 1", "edit",
+        helper.add_edit_url.assert_any_call(
+            "testapp.testmodel", "Truncated Test Instance 1",
             "http://testserver/admin/modeladmin/testapp/testmodel/edit/1/"
         )
-        mock_format_url_tuple.assert_any_call(
-            "testapp.testmodel", "Truncated Test Instance 2", "edit",
+        helper.add_edit_url.assert_any_call(
+            "testapp.testmodel", "Truncated Test Instance 2",
             "http://testserver/admin/modeladmin/testapp/testmodel/edit/2/"
         )
         
         # Check delete URLs
-        mock_format_url_tuple.assert_any_call(
-            "testapp.testmodel", "Truncated Test Instance 1", "delete",
+        helper.add_delete_url.assert_any_call(
+            "testapp.testmodel", "Truncated Test Instance 1",
             "http://testserver/admin/modeladmin/testapp/testmodel/delete/1/"
         )
-        mock_format_url_tuple.assert_any_call(
-            "testapp.testmodel", "Truncated Test Instance 2", "delete",
+        helper.add_delete_url.assert_any_call(
+            "testapp.testmodel", "Truncated Test Instance 2",
             "http://testserver/admin/modeladmin/testapp/testmodel/delete/2/"
         )
 
     @patch('wagtail_unveil.helpers.modeladmin_helpers.model_has_instances')
-    @patch('wagtail_unveil.helpers.modeladmin_helpers.format_url_tuple')
-    def test_collect_urls_without_instances(self, mock_format_url_tuple, mock_model_has_instances):
+    def test_collect_urls_without_instances(self, mock_model_has_instances):
         """Test collect_urls method when models have no instances."""
         helper = ModelAdminHelper(self.output, self.base_url, self.max_instances)
         
@@ -229,24 +226,20 @@ class ModelAdminHelperTests(TestCase):
         helper.get_modeladmin_models = Mock(return_value=[self.mock_model])
         helper.get_modeladmin_url_paths = Mock(return_value={})
         
+        # Also mock the helper method
+        helper.write_no_instances_message = Mock()
+        helper.add_url_for_model_with_no_instances = Mock()
+        
         # Configure other mocks
         mock_model_has_instances.return_value = False
         
-        mock_format_url_tuple.side_effect = lambda model, instance_name, url_type, url: (
-            model, instance_name, url_type, url)
-        
         # Call collect_urls and check results
-        result = helper.collect_urls()
+        helper.collect_urls()
         
-        # Should have only list URL with "NO INSTANCES" note
-        self.assertEqual(len(result), 1)
-        
-        # Verify the "no instances" message was written to output
-        self.assertIn("Note: testapp.testmodel has no instances", self.output.getvalue())
-        
-        # Check that format_url_tuple was called correctly
-        mock_format_url_tuple.assert_called_once_with(
-            "testapp.testmodel (NO INSTANCES)", None, "list",
+        # Check that the appropriate methods were called
+        helper.write_no_instances_message.assert_called_once_with("testapp.testmodel")
+        helper.add_url_for_model_with_no_instances.assert_called_once_with(
+            "testapp.testmodel", 
             "http://testserver/admin/modeladmin/testapp/testmodel/"
         )
 
@@ -284,30 +277,35 @@ class ModelAdminHelperTests(TestCase):
         helper.get_modeladmin_models = Mock(return_value=[self.mock_model])
         helper.get_modeladmin_url_paths = Mock(return_value={self.mock_model: "custom/model/path"})
         
+        # Also mock the helper methods that add URLs
+        helper.add_list_url = Mock()
+        helper.add_edit_url = Mock()
+        helper.add_delete_url = Mock()
+        
         # Mock other helpers
         with patch('wagtail_unveil.helpers.modeladmin_helpers.model_has_instances') as mock_model_has_instances, \
              patch('wagtail_unveil.helpers.modeladmin_helpers.get_instance_sample') as mock_get_instance_sample, \
-             patch('wagtail_unveil.helpers.modeladmin_helpers.truncate_instance_name') as mock_truncate_instance_name, \
-             patch('wagtail_unveil.helpers.modeladmin_helpers.format_url_tuple') as mock_format_url_tuple:
+             patch('wagtail_unveil.helpers.modeladmin_helpers.truncate_instance_name') as mock_truncate_instance_name:
             
             mock_model_has_instances.return_value = True
             mock_get_instance_sample.return_value = [self.mock_instance1]
             mock_truncate_instance_name.side_effect = lambda x: f"Truncated {x}"
             
-            mock_format_url_tuple.side_effect = lambda model, instance_name, url_type, url: (
-                model, instance_name, url_type, url)
-            
             # Call collect_urls
             helper.collect_urls()
             
             # Check URLs use custom path
-            mock_format_url_tuple.assert_any_call(
-                "testapp.testmodel", None, "list", 
+            helper.add_list_url.assert_called_once_with(
+                "testapp.testmodel", 
                 "http://testserver/admin/custom/model/path/"
             )
-            mock_format_url_tuple.assert_any_call(
-                "testapp.testmodel", "Truncated Test Instance 1", "edit",
+            helper.add_edit_url.assert_called_once_with(
+                "testapp.testmodel", "Truncated Test Instance 1",
                 "http://testserver/admin/custom/model/path/edit/1/"
+            )
+            helper.add_delete_url.assert_called_once_with(
+                "testapp.testmodel", "Truncated Test Instance 1",
+                "http://testserver/admin/custom/model/path/delete/1/"
             )
 
     def test_modeladmin_urls(self):
